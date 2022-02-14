@@ -16,10 +16,9 @@ setup(
     long_description_content_type="text/markdown",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: AGPL-3.0 License",
         "Operating System :: OS Independent",
     ],
-
+    license="AGPL-3.0 License",
     url="https://github.com/FengLiuFeseliud/pycqBot",
     author="FengLiuFeseliud",
     author_email="17351198406@qq.com",

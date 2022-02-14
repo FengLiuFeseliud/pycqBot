@@ -1,4 +1,9 @@
 import requests
+import os
+import sys
+from threading import Lock, Thread
+import time
+from pycqBot.socketApp import cqSocket
 
 
 class cqHttpApi:
@@ -146,13 +151,25 @@ class cqHttpApi:
         获取好友列表
         """
         return self.link("/get_friend_list")
-
+    
+    def clean_cache(self):
+        return self.link("/clean_cache")
+    
+    def set_restart(self, delay=600):
+        post_data = {
+            "delay": delay
+        }
+        return self.link("/set_restart", post_data)
 
 class cqBot:
+    """
+    cqBot 机器人
+    """
 
     def __init__(self, cq_api, on_group_msg=None, on_private_msg=None,
             group_id_list=[], user_id_list=[],
-            command={}, 
+            command={},
+            timing={},
             options={}
         ):
 
@@ -167,19 +184,26 @@ class cqBot:
         self.on_private_msg = on_private_msg
         # 指令列表
         self.commandList = command
+        # 定时任务
+        self.timingList = timing
         # 管理员列表
         self.admin = []
         # 指令标志符
-        self.commandSign = "$"
+        self.commandSign = "/"
         # 帮助信息模版
         self.help_text = "本bot帮助信息!\n{help_command_text}\npycqbot v0.1.0"
+        # 自动启动连接
+        self.auto_start = True
+        # 自动启动定时任务
+        self.auto_timing_start = True
 
         for key in options.keys():
             exec("self.%s = '%s'" % (key, options[key]))
         
         self.commandList["help"] = {
             "help": [
-                "$help - 显示本条帮助信息"
+                "/help - 显示本条帮助信息",
+
             ]
         }
 
@@ -190,12 +214,70 @@ class cqBot:
             self.cq_api.send_group_msg(from_id, self.help_text)
 
         self.commandList["help"]["function"] = print_help
+
+        if self.auto_start:
+            cqSocket(self)
+        
+        if self.auto_timing_start:
+            self.timing_start()
     
     def meta_event_connect(self, message):
         """
         连接响应
         """
         print("成功连接 websocket 服务! bot qq:%s" % message["self_id"])
+    
+    def _timing_start(self):
+        """
+        定时任务
+        """
+        def loop(job):
+            run_count = 0
+            while True:
+                for group_id in self.__group_id_list:
+                    if group_id in job["ban"]:
+                        return
+                    
+                    run_count += 1
+                    try:
+                        job["function"](group_id)
+                        self.timing_end(job, run_count)
+
+                    except Exception as err:
+                        self.runTimingError(job, run_count, err)
+
+                time.sleep(job["timeSleep"])
+        
+        for timing_job_key in self.timingList.keys():
+            
+            if "ban" not in self.timingList[timing_job_key]:
+                self.timingList[timing_job_key]["ban"] = []
+            
+            self.timingList[timing_job_key]["name"] = timing_job_key
+            thread = Thread(target=loop, args=(self.timingList[timing_job_key],), 
+                name=timing_job_key)
+            thread.setDaemon(True)
+            thread.start()
+    
+    def timing_start(self):
+        """
+        启动定时任务
+        """
+        self._timing_start()
+        print("定时任务启动完成!")
+    
+    def timing_end(self, job, run_count):
+        """
+        定时任务被执行
+        """
+        print("定时任务 %s 执行完成! 共执行 %s 次" % (job["name"], run_count))
+    
+    def runTimingError(self, job, run_count, err):
+        """
+        定时任务执行错误
+        """
+        print("定时任务 %s 执行错误... 共执行 %s 次 Error: %s" % (job["name"], run_count, err))
+    
     
     def _set_help_text(self):
         """
@@ -247,6 +329,11 @@ class cqBot:
             if "admin" not in self.commandList[command]:
                 self.commandList[command]["admin"] = False
             
+            if "user" not in self.commandList[command]:
+                self.commandList[command]["user"] = ["all"]
+            else:
+                self.commandList[command]["user"] = self.commandList[command]["user"].split(",")
+            
             if "ban" not in self.commandList[command]:
                 self.commandList[command]["ban"] = []
             
@@ -260,26 +347,36 @@ class cqBot:
 
         commandSign, command, commandData = self._set_command_key(message["message"])
 
+        if commandSign != self.commandSign:
+            return False
+        
         if "group_id" in message:
             from_id = message["group_id"]
         else:
             from_id = message["user_id"]
 
-        if commandSign != self.commandSign:
+        if command not in self.commandList:
+            self.notCommandError(message, from_id)
+            return False
+
+        if self.commandList[command]["type"] != command_type:
             return False
         
         self.check_command(message, from_id)
         
-        if command not in self.commandList:
-            self.notCommandError(message, from_id)
-            return False
-        
-        if self.commandList[command]["type"] != command_type:
-            return False
-        
         if from_id in self.commandList[command]["ban"]:
             self.banCommandError(message, from_id)
             return False
+        
+        user_list = self.commandList[command]["user"]
+        if user_list[0] != "all":
+            if "role" not in message["sender"] and "anonymous" not in user_list:
+                self.userPurviewError(message, from_id)
+                return False
+            elif "role" in message["sender"]:
+                if message["sender"]["role"] not in user_list["user"] and user_list[0] != "nall":
+                    self.userPurviewError(message, from_id)
+                    return False
         
         if self.commandList[command]["admin"] and message["user_id"] not in self.admin:
             self.purviewError(message, from_id)
@@ -313,7 +410,7 @@ class cqBot:
         """
         通用私聊消息处理
         """
-        if message["user_id"] not in self.__user_id_list or self.__user_id_list == []:
+        if message["user_id"] not in self.__user_id_list and self.__user_id_list != []:
             return
 
         try:
@@ -327,7 +424,7 @@ class cqBot:
         """
         通用群消息处理
         """
-        if message["group_id"] not in self.__group_id_list or self.__group_id_list == []:
+        if message["group_id"] not in self.__group_id_list and self.__group_id_list != []:
             return
 
         try:
@@ -383,9 +480,15 @@ class cqBot:
         """
         self._bot_message_log("指令 %s 被禁用!" % message["message"], from_id)
     
+    def userPurviewError(self, message, from_id):
+        """
+        指令用户组权限不足时错误
+        """
+        self._bot_message_log("%s 用户组权限不足... 指令 %s" % (self.user_log_srt(message), message["message"]), from_id)
+    
     def purviewError(self, message, from_id):
         """
-        指令权限不足时错误
+        指令权限不足时错误 (bot admin)
         """
         self._bot_message_log("%s 权限不足... 指令 %s" % (self.user_log_srt(message), message["message"]), from_id)
     
@@ -396,79 +499,79 @@ class cqBot:
         self._bot_message_log("指令 %s 运行时错误... Error: %s" % (message["message"], err), from_id)
     
 
-    def notice_group_upload(self, message, from_id):
+    def notice_group_upload(self, message):
         """
         群文件上传
         """
         pass
     
-    def notice_group_admin_set(self, message, from_id):
+    def notice_group_admin_set(self, message):
         """
         群管理员设置
         """
         pass
 
-    def notice_group_admin_unset(self, message, from_id):
+    def notice_group_admin_unset(self, message):
         """
         群管理员取消
         """
         pass
     
-    def notice_group_decrease_leave(self, message, from_id):
+    def notice_group_decrease_leave(self, message):
         """
         群成员减少 - 主动退群
         """
         pass
     
-    def notice_group_decrease_kick(self, message, from_id):
+    def notice_group_decrease_kick(self, message):
         """
         群成员减少 - 成员被踢
         """
         pass
     
-    def notice_group_decrease_kickme(self, message, from_id):
+    def notice_group_decrease_kickme(self, message):
         """
         群成员减少 - 登录号被踢
         """
         pass
     
-    def notice_group_increase_approve(self, message, from_id):
+    def notice_group_increase_approve(self, message):
         """
         群成员增加 - 同意入群
         """
         pass
 
-    def notice_group_increase_invite(self, message, from_id):
+    def notice_group_increase_invite(self, message):
         """
         群成员增加 - 邀请入群
         """
         pass
     
-    def notice_group_ban_ban(self, message, from_id):
+    def notice_group_ban_ban(self, message):
         """
         群禁言
         """
         pass
 
-    def notice_group_ban_lift_ban(self, message, from_id):
+    def notice_group_ban_lift_ban(self, message):
         """
         群解除禁言
         """
         pass
 
-    def notice_group_recall(self, message, from_id):
+    def notice_group_recall(self, message):
         """
         群消息撤回
         """
         pass
     
-    def notice_notify_lucky_king(self, message, from_id):
+    def notice_notify_lucky_king(self, message):
         """
         群红包运气王提示
         """
         pass
     
-    def notice_notify_honor(self, message, from_id):
+    def notice_notify_honor(self, message):
         """
         群成员荣誉变更提示
         honor_type 荣誉类型
@@ -480,68 +583,123 @@ class cqBot:
 
         pass
     
-    def notice_group_card(self, message, from_id):
+    def notice_group_card(self, message):
         """
         群成员名片更新
         """
         pass
     
-    def notice_friend_add(self, message, from_id):
+    def notice_friend_add(self, message):
         """
         好友添加
         """
         pass
 
-    def notice_friend_recall(self, message, from_id):
+    def notice_friend_recall(self, message):
         """
         好友消息撤回
         """
         pass
     
-    def notice_notify_poke(self, message, from_id):
+    def notice_notify_poke(self, message):
         """
         好友/群内 戳一戳
         """
         pass
     
-    def notice_offline_file(self, message, from_id):
+    def notice_offline_file(self, message):
         """
         接收到离线文件
         """
         pass
 
-    def notice_client_status(self, message, from_id):
+    def notice_client_status(self, message):
         """
         其他客户端在线状态变更
         """
         pass
     
-    def notice_essence_add(self, message, from_id):
+    def notice_essence_add(self, message):
         """
         精华消息添加
         """
         pass
     
-    def notice_essence_delete(self, message, from_id):
+    def notice_essence_delete(self, message):
         """
         精华消息移出
         """
         pass
 
-    def request_friend(self, message, from_id):
+    def request_friend(self, message):
         """
         加好友请求
         """
         pass
 
-    def request_group_add(self, message, from_id):
+    def request_group_add(self, message):
         """
         加群请求
         """
         pass
     
-    def request_group_invite(self, message, from_id):
+    def request_group_invite(self, message):
         """
         加群邀请
         """
         pass
+
+
+class cqLog():
+
+    def __init__(self, save_in="./cqLog"):
+        self.__terminal = sys.stdout
+        self.save_in = save_in
+        self.__save_in_obj = None
+        self.save_in_load = False
+        self.lock = Lock()
+
+        self.__set_log_path = self.set_log_path()
+        sys.stdout = self
+
+    def __save_in_open(self):
+        if not os.path.isdir(self.save_in):
+            os.makedirs(self.save_in)
+
+        if not self.save_in_load:
+            self.__save_in_obj = open(self.__set_log_path, "a", encoding="utf-8")
+            self.save_in_load = True
+    
+    def __save_in_close(self):
+        if self.save_in_load:
+            self.__save_in_obj.close()
+            self.save_in_load = False
+    
+    def set_log_path(self):
+        return time.strftime(f"{self.save_in}/log_%Y_%m_%d_%H_%M_%S.txt", time.localtime())
+    
+    def set_log_style(self, log):
+        log_time = time.strftime("%H:%M:%S", time.localtime())
+        log_msg = "[%s] %s" % (log_time, log)
+        return log_msg
+    
+    def write(self, log):
+        self.__save_in_open()
+        
+        if log == "":
+            return
+
+        self.lock.acquire()
+        if log != "\n":
+            log = self.set_log_style(log)
+        
+
+        if self.save_in_load:
+            self.__save_in_obj.write(log)
+        self.__terminal.write(log)
+
+        self.__save_in_close()
+        self.lock.release()
+
+    def flush(self):
+        self.__terminal.flush()
