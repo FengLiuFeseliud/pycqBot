@@ -27,4 +27,3 @@ go-cqhttp python 框架，可以用于快速塔建 bot
 ## 我的b站头像：
 
 ![logo](https://i1.hdslb.com/bfs/face/3ad60a0f5d22e182d7a2a822710d483bc16153e2.jpg@250w_250h.webp)
-
