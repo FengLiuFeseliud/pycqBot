@@ -512,7 +512,7 @@ class cqBot(cqSocket):
         except TypeError:
             pass
         
-        self._run_command(message, "private")
+        self._run_command(message, cqCode_list, "private")
     
     def _message_group(self, message):
         """

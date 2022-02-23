@@ -294,18 +294,6 @@ class Bilibili:
             media_data[1],
             image(image_name, "https://%s" % cq_json["meta"]["detail_1"]["preview"])
         )
-
-    def set_live_message(self, liveData):
-        """
-        开播消息格式
-        """
-        cover_file_name = liveData["cover_from_user"].split("/")[-1]
-        return "%s开播了！\n%s\n====================\n%s\n%s" % (
-            liveData["uname"],
-            liveData["title"],
-            image(cover_file_name, liveData["cover_from_user"]),
-            "https://live.bilibili.com/%s" % liveData["room_id"],
-        )
     
     def set_live_message(self, liveData):
         """
