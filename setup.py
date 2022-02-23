@@ -26,6 +26,12 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     platforms="any",
-    install_requires=["requests", "websocket-client", "websocket"],
+    install_requires=["requests", 
+        "websocket-client", 
+        "websocket", 
+        "asyncio", 
+        "aiohttp",
+        "aiofiles"
+    ],
     python_requires='>=3.7'
 )
