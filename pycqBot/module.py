@@ -2,12 +2,12 @@ import logging
 import json
 from pycqBot.cqCode import image
 from lxml import etree
+import requests
 
 
 class Bilibili:
 
     def __init__(self, cqapi, monitor_live=[], monitor_dynamic=[]):
-
         self.cqapi = cqapi
         self._lives_old = []
         self._live_monitor_in = True
@@ -27,7 +27,7 @@ class Bilibili:
             
         self.monitor()
         self.monitor_send_clear()
-
+    
     def _json_data_check(self, json_data):
         if json_data["code"] != 0:
             self.biliApiError(json_data["code"], json_data["message"])
@@ -112,7 +112,7 @@ class Bilibili:
         api = "https://www.bilibili.com/read/cv%s" % cv_id
         cv_viewinfo_json = await self.get_cv_viewinfo(cv_id)
         # 爬取专栏内容
-        html = self.link(api, json_=False, mod="get")
+        html = await self.cqapi.link(api, json=False, mod="get")
         cv_text = self.set_cv_text(html)
 
         return cv_text, cv_viewinfo_json["data"]
@@ -329,17 +329,26 @@ class Bilibili:
             "https://live.bilibili.com/%s" % liveData["room_id"],
         )
     
-    def set_dynamic_forward_message(self, dynamic, dynamic_id, 
-            forward_dynamic, forward_dynamic_id, forward_dynamic_type):
+    def set_dynamic_forward_message(self, dynamic, dynamic_id, forward_dynamic_msg):
         """
         转发动态消息格式
         """
-        forward_dynamic_msg = self._dynamic_type_check(forward_dynamic_type, forward_dynamic, forward_dynamic_id)
         return "%s的动态更新！\n动态url：%s\n====================\n%s\n====================\n转发：%s" % (
             dynamic["user"]["uname"],
             "https://t.bilibili.com/%s" % dynamic_id,
             dynamic["item"]["content"],
             forward_dynamic_msg
+        )
+    
+    def set_dynamic_forward_delete_message(self, dynamic, dynamic_id):
+        """
+        转发被删除动态消息格式
+        """
+        return "%s的动态更新！\n动态url：%s\n====================\n%s\n====================\n转发：%s" % (
+            dynamic["user"]["uname"],
+            "https://t.bilibili.com/%s" % dynamic_id,
+            dynamic["item"]["content"],
+            dynamic["item"]["tips"]
         )
     
     def set_dynamic_message(self, dynamic, dynamic_id):
@@ -417,11 +426,15 @@ class Bilibili:
             card = dynamic
 
         if dynamic_type == 1:
+            if "origin" not in card:
+                return self.set_dynamic_forward_delete_message(
+                    card, dynamic_id
+                )
             forward_dynamic = json.loads(card["origin"])
             forward_dynamic_type = card["item"]["orig_type"]
             forward_dynamic_id = card["item"]["orig_dy_id"]
             return self.set_dynamic_forward_message(card, dynamic_id, 
-                forward_dynamic, forward_dynamic_id, forward_dynamic_type)
+                self._dynamic_type_check(forward_dynamic_type, forward_dynamic, forward_dynamic_id))
 
         if dynamic_type == 2:
             return self.set_dynamic_big_message(card, dynamic_id)
@@ -435,8 +448,8 @@ class Bilibili:
         if dynamic_type == 64:
             cv_url = "https://www.bilibili.com/read/cv%s" % card["id"]
             # 爬取专栏内容
-            html = self.link(cv_url, json_=False, mod="get")
-            cv_text = self.set_cv_text(html)
+            with requests.get(cv_url) as req:
+                cv_text = self.set_cv_text(req.text)
 
             return self.set_dynamic_cv_message(card, dynamic_id, cv_text)
     
@@ -497,8 +510,12 @@ class Bilibili:
             
             # 记录的新动态被删除 (获取的新动态时间小干记录的新动态)
             if dynamic_list[uid]["time"] < self._dynamic_list_old[uid]["time"]:
-                logging.debug(dynamic_list[uid])
-                logging.debug(self._dynamic_list_old[uid])
+                # 如果是视频更新 time 字段无法正常判断, 重新检查
+                if dynamic["desc"]["type"] == 8:
+                    # 检查动态 id
+                    if dynamic_list[uid]["desc"]["dynamic_id"]  == self._dynamic_list_old[uid]["desc"]["dynamic_id"]:
+                        continue
+
                 dynamic = self.set_dynamic_delete_message(await self._dynamic_check(
                     self._dynamic_list_old[uid]["data"])
                 )

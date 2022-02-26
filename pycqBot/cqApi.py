@@ -60,6 +60,15 @@ class cqHttpApi(asyncHttp):
         if from_message["message_type"] == "private":
             self.send_private_msg(from_message["user_id"], message, auto_escape)
     
+    def get_forward(self, forward_id):
+        """
+        获取合并转发
+        """
+        post_data = {
+            "id":forward_id,
+        }
+        return self._link("/get_forward_msg", post_data)
+    
     def set_group_ban(self, group_id, user_id, duration=30):
         """
         群组单人禁言

@@ -101,6 +101,30 @@ def cqJsonStrToDict(cq_json_str):
 
     return json.loads(cq_json_str)
 
+def DictTocqJsonStr(dict):
+    """
+    转换字典为 cqCode 中的 json 字符串
+    """
+    cq_json_str = json.dumps(dict, separators=(',', ':'),ensure_ascii=False)
+    cq_json_str = cq_json_str.replace("&", "&amp;")
+    cq_json_str = cq_json_str.replace(",", "&#44;")
+    cq_json_str = cq_json_str.replace("[", "&#91;")
+    cq_json_str = cq_json_str.replace("]", "&#93;")
+    cq_json_str = cq_json_str.replace("'", '"')
+
+    return cq_json_str
+
+def DictToCqCode(dict):
+    """
+    转换字典为 cqCode json
+    """
+    return set_cq_code({
+        "type": "json",
+        "data": {
+            "data": DictTocqJsonStr(dict)
+        }
+    })
+
 def face(face_id):
     """
     QQ 表情
