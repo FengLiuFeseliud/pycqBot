@@ -16,14 +16,12 @@ class cqSocket:
         无法单独使用
     """
 
-    def __init__(self):
+    def __init__(self, host):
         # 以下参数只有在启用时设置有效
         # websocket 会话 地址
-        self.host = "127.0.0.1"
-        # websocket 会话 端口
-        self.port = 5700
+        self._host = host
         # websocket 会话 debug
-        self.debug = False
+        self._debug = False
 
         """
         go-cqhttp 事件
@@ -88,25 +86,20 @@ class cqSocket:
             "meta_event_connect": self.meta_event_connect,
         }
     
-    def link(self):
+    def start(self):
         """
-        新建线程连接 websocket 会话
+        连接 websocket 会话
         """
-        def websocketThread():
-            if self.debug:
-                websocket.enableTrace(True)
-            
-            wsapp = websocket.WebSocketApp("ws://%s:%s" % (self.host, self.port),
-                    on_message=self._on_message, 
-                    on_error=self.on_error,
-                    on_open=self.on_open,
-                )
-            # 打开连接
-            wsapp.run_forever()
+        if self._debug:
+            websocket.enableTrace(True)
         
-        thread = Thread(target=websocketThread, name="websocketThread")
-        thread.setDaemon(True)
-        thread.start()
+        wsapp = websocket.WebSocketApp(self._host,
+                on_message=self._on_message, 
+                on_error=self.on_error,
+                on_open=self.on_open,
+            )
+        # 打开连接
+        wsapp.run_forever()
     
     def _set_event_name(self, message):
         """
@@ -192,17 +185,17 @@ class asyncHttp:
         
         return json
 
-    async def link(self, url, mod="get", data={}, json=True, allow_redirects=False):
+    async def link(self, url, mod="get", data={}, json=True, allow_redirects=False, proxy=None, headers={}):
         try:
             if mod == "get":
-                async with self._session.get(url,  data=data, allow_redirects=allow_redirects) as req:
+                async with self._session.get(url, data=data, allow_redirects=allow_redirects, proxy=proxy, headers=headers) as req:
                     if json:
                         data = await req.json()
                     else:
                         data = await req.text()
             
             if mod == "post":
-                async with self._session.post(url,  data=data, allow_redirects=allow_redirects) as req:
+                async with self._session.post(url, data=data, allow_redirects=allow_redirects, proxy=proxy, headers=headers) as req:
                     if json:
                         data = await req.json()
                     else:

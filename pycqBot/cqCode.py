@@ -125,6 +125,16 @@ def DictToCqCode(dict):
         }
     })
 
+def node_list(message_list, name, uin):
+    """
+    合并转发列表生成
+    """
+    node_list_data = []
+    for message in message_list:
+        node_list_data.append(node(message, name, uin))
+    
+    return json.dumps(node_list_data, separators=(',', ':'))
+
 def face(face_id):
     """
     QQ 表情
@@ -322,7 +332,7 @@ def music_my(url, audio, title, content="", image=""):
     return set_cq_code(cq_code)
 
 
-def image(file, url, type="", cache=1, show_id=""):
+def image(file, url="", type="", cache=1, show_id=""):
     """
     图片
     """
@@ -331,12 +341,12 @@ def image(file, url, type="", cache=1, show_id=""):
         "type": "image",
         "data":{
             "file": file,
-            "type": type,
-            "url": url,
             "cache": cache
         }
     }
 
+    if url != "":
+        cq_code["data"]["url"] = url
 
     if type != "":
         cq_code["data"]["type"] = type
@@ -346,6 +356,20 @@ def image(file, url, type="", cache=1, show_id=""):
 
     return set_cq_code(cq_code)
 
+
+def node(message, name, uin):
+    """
+    特殊 cqCode 不返回字符串 返回 node 字典
+    """
+
+    return {
+        "type":"node",
+        "data": {
+            "content": message,
+            "name": name,
+            "uin": uin
+        }
+    }
 
 def reply(text, seq, msg_id="", qq=""):
     """

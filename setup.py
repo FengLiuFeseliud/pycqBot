@@ -10,7 +10,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pycqBot",
-    version="0.2.2",
+    version="0.3.0",
     description="go-cqhttp python 框架，可以用于快速塔建 bot",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -31,7 +31,8 @@ setup(
         "websocket", 
         "asyncio", 
         "aiohttp",
-        "aiofiles"
+        "aiofiles",
+        "lxml"
     ],
     python_requires='>=3.7'
 )
