@@ -18,7 +18,7 @@ go-cqhttp python 框架，可以用于快速塔建 bot
 pypy3 -m pip install pycqBot
 # 改用 PyPy 运行
 pypy3 ./main.py
-``
+```
 
 ## 最新版本实现
 
