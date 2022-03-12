@@ -707,7 +707,7 @@ class cqBot(cqSocket):
                 self.userPurviewError(message, from_id)
                 return False
             elif "role" in message["sender"]:
-                if message["sender"]["role"] not in user_list["user"] and user_list[0] != "nall":
+                if message["sender"]["role"] not in user_list and user_list[0] != "nall":
                     self.userPurviewError(message, from_id)
                     return False
         
