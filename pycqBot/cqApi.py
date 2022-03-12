@@ -30,21 +30,24 @@ class cqHttpApi(asyncHttp):
         """
         长效消息存储 初始化
         """
-        db_path = os.path.join(db_path, "bot_msg_sql.db")
+        db_path = os.path.join(db_path, "bot_sql.db")
         self._db_path = db_path
 
-        if os.path.isfile(self._db_path):
-            os.remove(self._db_path)
+        if os.path.isfile(db_path):
+            os.remove(db_path)
 
         with sqlite3.connect(self._db_path) as sql_link:
             sql_cursor = sql_link.cursor()
+            # 初始化 Message 表
             sql_cursor.execute("""CREATE TABLE `Message` (
+                    ID               INTEGER PRIMARY KEY AUTOINCREMENT,
                     userId           NOT NULL,
                     stime            NOT NULL,
                     etime            NOT NULL,
                     messageData JSON NOT NULL
                 );
             """)
+
             sql_link.commit()
         
         thread = Thread(target=self._record_message_ck, args=(sleep,),name="_record_message_ck")
@@ -61,7 +64,8 @@ class cqHttpApi(asyncHttp):
                     sql_cursor = sql_link.cursor()
                     data_list = sql_cursor.execute("SELECT * FROM `Message` WHERE etime < '%s'" % int(time.time()))
                     for data in data_list:
-                        sql_cursor.execute("DELETE from `Message` where stime = '%s'" % data[1])
+                        sql_cursor.execute("DELETE from `Message` where ID = '%s'" % data[0])
+                        self.recordMessageInvalid(data, sql_link)
 
             except Exception as err:
                 self.recordMessageCKError(err)
@@ -79,12 +83,10 @@ class cqHttpApi(asyncHttp):
                 sql_cursor = sql_link.cursor()
                 sql_cursor.execute("""
                     INSERT INTO `Message` VALUES (
-                        "%s", "%s", "%s", "%s" 
+                        NULL , "%s", "%s", "%s", "%s" 
                     )
                 """ % (message_data["user_id"], time_int, time_end, message_data))
                 sql_link.commit()
-        except sqlite3.IntegrityError:
-            self.recordMessageInSqlDB(message_data, time_int, time_end)
         except Exception as err:
             self.recordMessageError(message_data, time_int, time_end, err)
     
@@ -372,19 +374,31 @@ class cqHttpApi(asyncHttp):
         """
         return self._link("/get_status")
     
-    def recordMessageInSqlDB(self, message_data, time_int, time_end):
-        pass
+    def recordMessageInvalid(self, record_message_data, sql_link):
+        """
+        长效消息存储 消息失效
+        """
+        logging.debug("长效消息存储 消息失效 %s" % str(record_message_data))
     
     def recordMessageError(self, message_data, time_int, time_end, err):
-        logging.error("")
+        """
+        长效消息存储 消息存储失败
+        """
+        logging.error("长效消息存储 消息存储失败 %s Error: %s" % (message_data, err))
         logging.exception(err)
     
     def recordMessageGetError(self, user_id, err):
-        logging.error("")
+        """
+        长效消息存储 消息查询失败
+        """
+        logging.error("长效消息存储 消息查询失败 user_id: %s Error: %s" % (user_id, err))
         logging.exception(err)
     
     def recordMessageCKError(self, err):
-        logging.error("")
+        """
+        长效消息存储 检查消息失败
+        """
+        logging.error("长效消息存储 检查消息失败 Error: %s" % err)
         logging.exception(err)
 
 
@@ -420,6 +434,8 @@ class cqBot(cqSocket):
         self.messageSqlPath = "./"
         # 长效消息存储 清理间隔
         self.messageSqlClearTime = 60
+        # go_cqhttp 状态 通过心跳更新
+        self._go_cqhttp_status = {}
 
         for key in options.keys():
             if type(options[key]) is str:
@@ -446,26 +462,27 @@ class cqBot(cqSocket):
         内置指令 status
             查看 go-cqhttp 状态
         """
+        
+        def status(_, __, message, ___):
+            if self._go_cqhttp_status == {}:
+                self.cqapi.send_reply(message, "go-cqhttp 心跳未被正常配置，请检查")
+                logging.warning("go-cqhttp 心跳未被正常配置")
+                return
 
-        async def _status(message):
-            status_info = (await self.cqapi._asynclink("/get_status"))["data"]
             status_msg = "bot (qq=%s) 是否在线：%s\n收到数据包：%s\n发送数据包：%s\n丢失数据包：%s\n接受信息：%s\n发送信息：%s\nTCP 链接断开：%s\n账号掉线次数：%s\n最后消息时间：%s" % (
                 self.__bot_qq,
-                status_info["online"],
-                status_info["stat"]["PacketReceived"],
-                status_info["stat"]["PacketSent"],
-                status_info["stat"]["PacketLost"],
-                status_info["stat"]["MessageReceived"],
-                status_info["stat"]["MessageSent"],
-                status_info["stat"]["DisconnectTimes"],
-                status_info["stat"]["LostTimes"],
-                status_info["stat"]["LastMessageTime"],
+                self._go_cqhttp_status["online"],
+                self._go_cqhttp_status["stat"]["PacketReceived"],
+                self._go_cqhttp_status["stat"]["PacketSent"],
+                self._go_cqhttp_status["stat"]["PacketLost"],
+                self._go_cqhttp_status["stat"]["MessageReceived"],
+                self._go_cqhttp_status["stat"]["MessageSent"],
+                self._go_cqhttp_status["stat"]["DisconnectTimes"],
+                self._go_cqhttp_status["stat"]["LostTimes"],
+                self._go_cqhttp_status["stat"]["LastMessageTime"],
             )
 
             self.cqapi.send_reply(message, status_msg)
-        
-        def status(_, __, message, ___):
-            self.cqapi.add_task(_status(message))
         
         self.command(status, "status", {
             "type": "all",
@@ -562,12 +579,15 @@ class cqBot(cqSocket):
 
         logging.info("创建定时任务 %s " % timing_name)
     
+    def set_bot_status(self, message):
+        self.__bot_qq = message["self_id"]
+        self.cqapi.bot_qq = message["self_id"]
+    
     def _meta_event_connect(self, message):
         """
         连接响应
         """
-        self.__bot_qq = message["self_id"]
-        self.cqapi.bot_qq = message["self_id"]
+        self.set_bot_status(message)
         if self.messageSql is True:
             self.cqapi._create_sql_link(self.messageSqlPath, self.messageSqlClearTime)
     
@@ -577,6 +597,13 @@ class cqBot(cqSocket):
         """
         self._meta_event_connect(message)
         logging.info("成功连接 websocket 服务! bot qq:%s" % self.__bot_qq)
+    
+    def meta_event(self, message):
+        """
+        心跳
+        """
+        self.set_bot_status(message)
+        self._go_cqhttp_status = message["status"]
     
     def timing_start(self):
         """
@@ -635,7 +662,11 @@ class cqBot(cqSocket):
         指令解析
         """
 
-        commandSign = list(message)[0]
+        if self.commandSign != "":
+            commandSign = list(message)[0]
+        else:
+            commandSign = ""
+
         command_str_list = message.split(" ")
         command = command_str_list[0].lstrip(commandSign)
         commandData = command_str_list[1:]
@@ -651,12 +682,12 @@ class cqBot(cqSocket):
 
         if commandSign != self.commandSign:
             return False
-        
+
         if "group_id" in message:
             from_id = message["group_id"]
         else:
             from_id = message["user_id"]
-
+        
         if command not in self._commandList:
             self.notCommandError(message, from_id)
             return False
@@ -818,6 +849,10 @@ class cqBot(cqSocket):
         """
         指令不存在时错误
         """
+        # commandSign 为空时不处理 不然每一条消息都会调用 notCommandError ...
+        if self.commandSign == "":
+            return
+
         self._bot_message_log("指令 %s 不存在..." % message["message"], message)
     
     def banCommandError(self, message, from_id):

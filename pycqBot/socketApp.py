@@ -84,6 +84,8 @@ class cqSocket:
             "request_group_invite": self.request_group_invite,
             # 连接响应
             "meta_event_connect": self.meta_event_connect,
+            # 心跳
+            "meta_event": self.meta_event
         }
     
     def start(self):

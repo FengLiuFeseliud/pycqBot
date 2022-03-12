@@ -1,0 +1,8 @@
+/cqLog
+/__pycache__
+/dist
+/pycqBot/__pycache__
+/pycqBot.egg-info
+/download
+/cqLogs
+/main.py
