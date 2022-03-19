@@ -371,7 +371,7 @@ def node(message, name, uin):
         }
     }
 
-def reply(text, seq, msg_id="", qq=""):
+def reply(text="", seq="", msg_id="", qq=""):
     """
     回复
     """
@@ -379,18 +379,15 @@ def reply(text, seq, msg_id="", qq=""):
     cq_code = {
         "type": "reply",
         "data":{
-            "text": text,
-            "seq": seq,
-            "time": int(time())
+            "id": msg_id
         }
     }
 
-
-    if msg_id != "":
-        cq_code["data"]["msg_id"] = msg_id
-    
-    if qq != "":
+    if text != "":
+        cq_code["data"]["text"] = msg_id
         cq_code["data"]["qq"] = qq
+        cq_code["data"]["seq"] = seq
+        cq_code["data"]["time"] = int(time())
 
     return set_cq_code(cq_code)
 

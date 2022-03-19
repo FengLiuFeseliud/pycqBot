@@ -608,13 +608,15 @@ class Bilibili:
 
 class pixiv:
 
-    def __init__(self, cqapi, forward_name, forward_qq, proxy=None, cookie="", max_rlen=10, max_pid_len=20):
+    def __init__(self, cqapi, forward_name, forward_qq, cookie, proxy=None, max_rlen=10, max_pid_len=20):
         self.cqapi = cqapi
         self._forward_qq = forward_qq
         self._forward_name = forward_name
+        self._following_count = 0
         self._max_rlen = max_rlen
         self._max_pid_len = max_pid_len
         self._proxy= "http://%s" % proxy
+        self.user_id = cookie.split("PHPSESSID=")[-1].split("_", maxsplit=1)[0]
         self._headers = [
             "referer=https://www.pixiv.net/",
             "cookie=%s" % cookie
@@ -632,21 +634,57 @@ class pixiv:
         
         return data
     
-    async def send_image_list(self, image_list, message):
+    def search_image_random_message(self, image_data, img_code):
+        return "标题：%s\n画师：%s\n%s\n%s" % (
+            image_data["title"],
+            image_data["userName"],
+            "https://www.pixiv.net/artworks/%s" % image_data["id"],
+            img_code
+        )
+    
+    def search_user_random_message(self, image_data, img_code):
+        return img_code
+    
+    def search_pid_message(self, image_data, img_code):
+        return img_code
+    
+    def _ck_send_type(self, image_data, img_code, send_type):
+        if send_type == 1:
+            return self.search_image_random_message(image_data, img_code)
+        
+        if send_type == 2:
+            return self.search_user_random_message(image_data, img_code)
+        
+        if send_type == 3:
+            return self.search_pid_message(image_data, img_code)
+    
+    async def _send_image_list(self, image_list, message, send_type):
         """
         转发图片表
         """
-        message_id_list = []
+        message_list = []
         for image_url in image_list:
-            cache_file = await self.cqapi._cqhttp_download_file(image_url, self._headers)
-            message_id_list.append(image("file://%s" % cache_file))
+            cache_file = await self.cqapi._cqhttp_download_file(image_url[1], self._headers)
+            message_list.append(self._ck_send_type(
+                    image_url[0], 
+                    image("file://%s" % cache_file),
+                    send_type
+                )
+            )
 
-        self.cqapi.send_group_forward_msg(message["group_id"], node_list(message_id_list, 
+        self.cqapi.send_group_forward_msg(message.group_id, node_list(message_list, 
             self._forward_name,
             self._forward_qq
         ))
+    
+    async def _get_following(self, offset):
+        api = "https://www.pixiv.net/ajax/user/%s/following?offset=%s&limit=24&rest=show&tag=&lang=zh" % (
+            self.user_id,
+            offset
+        )
+        return self._json_data_check(await self.cqapi.link(api, proxy=self._proxy, headers=self._pyheaders))
 
-    async def search_image(self, search_data, page):
+    async def _search_image(self, search_data, page):
         api = "https://www.pixiv.net/ajax/search/artworks/%s?word=%s&order=date_d&mode=all&p=%s&s_mode=s_tag_full&type=all&lang=zh" % (
             search_data,
             search_data,
@@ -654,13 +692,13 @@ class pixiv:
         )
         return self._json_data_check(await self.cqapi.link(api, proxy=self._proxy, headers=self._pyheaders))
     
-    async def user_image_id(self, user_id):
+    async def _user_image_id(self, user_id):
         api = "https://www.pixiv.net/ajax/user/%s/profile/all?lang=zh" % (
             user_id
         )
         return self._json_data_check(await self.cqapi.link(api, proxy=self._proxy, headers=self._pyheaders))
     
-    async def get_image(self, img_id, message):
+    async def _get_image(self, img_id, message):
         """
         获取图片数据
         """
@@ -677,7 +715,7 @@ class pixiv:
             return False
 
     
-    async def get_user(self, user_name, nick=False):
+    async def _get_user(self, user_name, nick=False):
         """
         获取用户
         """
@@ -713,29 +751,29 @@ class pixiv:
 
         return user_item
     
-    async def random_image(self, image_list, rlen, message):
+    async def _random_image(self, image_list, rlen, message):
         random_image_list = []
         img_id_list = []
         # 随机原图
         for _ in range(0, int(rlen)):
             while True:
-                img_id = random.choice(image_list)
+                img_data = random.choice(image_list)
 
-                if img_id in img_id_list:
+                if img_data in img_id_list:
                     continue
 
-                if "id" in img_id:
-                    img_id_list.append(img_id["id"])
+                if "id" in img_data:
+                    img_id_list.append(img_data["id"])
                 else:
-                    img_id_list.append(img_id)
+                    img_id_list.append(img_data)
 
                 break
 
-            img_data = await self.get_image(img_id_list[-1], message)
-            if not img_data:
+            img_url = await self._get_image(img_id_list[-1], message)
+            if not img_url:
                 continue
                 
-            random_image_list.append(img_data[0]["urls"]["original"])
+            random_image_list.append([img_data, img_url[0]["urls"]["original"]])
         
         return random_image_list
     
@@ -750,7 +788,7 @@ class pixiv:
                 rlen = self._max_rlen
 
             # 获取数据量
-            data = await self.search_image(search_data, 1)
+            data = await self._search_image(search_data, 1)
             if not data:
                 return
             
@@ -766,17 +804,23 @@ class pixiv:
                 random_page = 1
 
             # 获取页数据
-            data = await self.search_image(search_data, random_page)
+            data = await self._search_image(search_data, random_page)
             image_list = data["body"]["illustManga"]["data"]
 
             if len(image_list) < int(rlen):
                 rlen = len(image_list)
                 self.insufficient_search_image(search_data, rlen, message)
             
-            await self.send_image_list(await self.random_image(image_list, rlen, message), message)
+            await self._send_image_list(await self._random_image(image_list, rlen, message), message, 1)
         except Exception as err:
             self.randomSearchImageError(search_data, rlen, err)
             return False
+    
+    async def _user_image_random(self, user_id, rlen, message):
+        user_image_id_list = await self._user_image_id(user_id)
+        user_image_id_list = list(user_image_id_list["body"]["illusts"].keys())
+
+        await self._send_image_list(await self._random_image(user_image_id_list, rlen, message), message, 2)
     
     async def _search_user_image_random(self, user_name, rlen, message, nick=False):
         """
@@ -789,22 +833,19 @@ class pixiv:
                 rlen = self._max_rlen
 
             # 获取用户作品 id
-            user_item = await self.get_user(user_name, nick)
+            user_item = await self._get_user(user_name, nick)
             if not user_item:
                 self.searchNotUser(user_name, rlen, nick, message)
                 return False
-
-            user_image_id_list = await self.user_image_id(user_item["user_id"])
-            user_image_id_list = list(user_image_id_list["body"]["illusts"].keys())
-
-            await self.send_image_list(await self.random_image(user_image_id_list, rlen, message), message)
+            
+            await self._user_image_random(user_item["user_id"], rlen, message)
         except Exception as err:
             self.randomSearchUserImageError(user_name, rlen, nick, err)
             return False
     
     async def _search_pid(self, pid, message):
         try:
-            img_data = await self.get_image(pid, message)
+            img_data = await self._get_image(pid, message)
             if not img_data:
                 return False
             
@@ -814,40 +855,93 @@ class pixiv:
 
             send_img = []
             for img in img_data:
-                send_img.append(img["urls"]["original"])
+                send_img.append([pid, img["urls"]["original"]])
                 
-            await self.send_image_list(send_img, message)
+            await self._send_image_list(send_img, message, 3)
         except Exception as err:
             self.searchPidError(pid, err)
             return False
     
+    async def _search_following_image_random(self, rlen, message):
+        try:
+            offset = 0
+            if self._following_count != 0:
+                random_page = random.randint(1, int(self._following_count / 24))
+                if random_page != 1:
+                    offset = random_page * 24
+
+            following_data = await self._get_following(offset)
+            if following_data["error"]:
+                self.getFollowingError(following_data["message"])
+                return False
+
+            self._following_count = following_data["body"]["total"]
+            following_user = random.choice(following_data["body"]["users"])
+
+            await self._user_image_random(following_user["userId"], rlen, message)
+        except Exception as err:
+            self.randomSearchFollowingImageError(err)
+            return False
+    
     def search_image_random(self, search_data, rlen, message):
+        """
+        搜索标签随机图
+        """
         self.cqapi.add_task(self._search_image_random(search_data, rlen, message))
     
     def search_user_image_random(self, user_name, rlen, message, nick=False):
+        """
+        搜索用户随机图
+        """
         self.cqapi.add_task(self._search_user_image_random(user_name, rlen, message, nick))
     
     def search_pid(self, pid, message):
+        """
+        搜索pid
+        """
         self.cqapi.add_task(self._search_pid(pid, message))
     
+    def search_following_image_random(self, rlen, message):
+        """
+        搜索关注用户随机图
+        """
+        self.cqapi.add_task(self._search_following_image_random(rlen, message))
+    
     def none_search_image(self, search_data, rlen, message):
-        self.cqapi.send_reply(message, "%s 没有搜索到数据..." % search_data)
+        """
+        没有搜索到数据
+        """
+        message.reply("%s 没有搜索到数据..." % search_data)
     
     def insufficient_search_image(self, search_data, rlen, message):
-        self.cqapi.send_reply(message, "%s 数据量不足于指定量，将全部返回%s张" % (search_data, rlen))
+        """
+        数据量不足于指定量
+        """
+        message.reply("%s 数据量不足于指定量，将全部返回%s张" % (search_data, rlen))
     
     def notImage(self, img_id, err_msg, message):
-        self.cqapi.send_group_msg(message["group_id"], "无法获得到 %s，%s" % (img_id, err_msg))
+        """
+        没有搜索到 pid
+        """
+        message.reply("无法获得到 %s，%s" % (img_id, err_msg))
     
     def searchNotUser(self, user_name, rlen, nick, message):
-        self.cqapi.send_group_msg(message["group_id"], "没有 %s 的用户" % user_name)
+        """
+        没有搜索到用户
+        """
+        message.reply("没有 %s 的用户" % user_name)
     
     def maxRlen(self, rlen, message):
-        self.cqapi.send_group_msg(message["group_id"], "指定量 %s 超出最大值 %s，将返回最大值" % (rlen, self._max_rlen))
+        """
+        指定量超出最大值
+        """
+        message.reply("指定量 %s 超出最大值 %s，将返回最大值" % (rlen, self._max_rlen))
     
     def maxPidLen(self, rlen, message):
-        self.cqapi.send_group_msg(message["group_id"], "指定量 %s 超出 PID 获取最大值 %s，将截取" % (rlen, self._max_pid_len))
-    
+        """
+        指定量超出PID获取最大值 
+        """
+        message.reply("指定量 %s 超出 PID 获取最大值 %s，将截取" % (rlen, self._max_pid_len))
         
     def randomSearchImageError(self, search_data, rlen, err):
         """
@@ -863,17 +957,39 @@ class pixiv:
         logging.error("随机 %s 作品时发生错误! Error: %s " % (user_name, err))
         logging.exception(err)
     
+    def randomSearchFollowingImageError(self, err):
+        """
+        随机关注用户作品时发生错误
+        """
+        logging.error("随机关注用户作品时发生错误! Error: %s " % err)
+        logging.exception(err)
+    
     def searchPidError(self, pid_list, err):
+        """
+        搜索PID时发生错误
+        """
         logging.error("搜索 PID %s 时发生错误! Error: %s " % (pid_list, err))
         logging.exception(err)
     
     def getImageError(self, img_id, err):
+        """
+        搜索图片时发生错误
+        """
         logging.error("搜索图片 %s 时发生错误! Error: %s " % (img_id, err))
         logging.exception(err)
     
     def getUserError(self, user_name, nick, err):
+        """
+        搜索用户时发生错误
+        """
         logging.error("搜索用户 %s 时发生错误! Error: %s " % (user_name, err))
         logging.exception(err)
+    
+    def getFollowingError(self, following_data):
+        """
+        获取关注用户时发生错误
+        """
+        logging.error("获取关注用户时发生错误! Error: %s " % following_data)
 
     def pixivApiError(self, err_msg):
         """

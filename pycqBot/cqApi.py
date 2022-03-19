@@ -5,8 +5,8 @@ import logging
 from threading import Thread
 import time
 import sqlite3
+from pycqBot.object import Message
 from pycqBot.socketApp import cqSocket, asyncHttp
-from pycqBot.cqCode import strToCqCodeToDict
 
 
 class cqHttpApi(asyncHttp):
@@ -85,7 +85,7 @@ class cqHttpApi(asyncHttp):
                     INSERT INTO `Message` VALUES (
                         NULL , "%s", "%s", "%s", "%s" 
                     )
-                """ % (message_data["user_id"], time_int, time_end, message_data))
+                """ % (message_data.user_id, time_int, time_end, message_data.message_data))
                 sql_link.commit()
         except Exception as err:
             self.recordMessageError(message_data, time_int, time_end, err)
@@ -98,21 +98,23 @@ class cqHttpApi(asyncHttp):
             with sqlite3.connect(self._db_path) as sql_link:
                 sql_cursor = sql_link.cursor()
                 data_list = sql_cursor.execute("SELECT * FROM `Message` WHERE userId = '%s'" % user_id)
-                return data_list.fetchall()
+
+                data_list = data_list.fetchall()
+                return data_list
 
         except Exception as err:
             self.recordMessageGetError(user_id, err)
 
-    def reply(self, user_id, sleep):
+    def reply(self, user_id, sleep) -> Message or None:
         """
         等待回复
         """
         in_time =  time.time()
         sleep += in_time
-        self.__reply_list_msg[user_id] = {}
+        self.__reply_list_msg[user_id] = None
         while in_time < sleep:
             in_time = time.time()
-            if self.__reply_list_msg[user_id] == {}:
+            if self.__reply_list_msg[user_id] is None:
                 continue
             
             break
@@ -187,11 +189,11 @@ class cqHttpApi(asyncHttp):
         """
         发送回复
         """
-        if from_message["message_type"] == "group":
-            self.send_group_msg(from_message["group_id"], message, auto_escape)
+        if from_message.type == "group":
+            self.send_group_msg(from_message.group_id, message, auto_escape)
         
-        if from_message["message_type"] == "private":
-            self.send_private_msg(from_message["user_id"], message, auto_escape)
+        if from_message.type == "private":
+            self.send_private_msg(from_message.user_id, message, auto_escape)
     
     def get_forward(self, forward_id):
         """
@@ -448,8 +450,8 @@ class cqBot(cqSocket):
             显示帮助信息
         """
 
-        def print_help(_, __, message, ___):
-            self.cqapi.send_reply(message, self.help_text)
+        def print_help(_, message):
+            message.reply(self.help_text)
 
         self.command(print_help, "help", {
             "type": "all",
@@ -463,7 +465,7 @@ class cqBot(cqSocket):
             查看 go-cqhttp 状态
         """
         
-        def status(_, __, message, ___):
+        def status(_, message):
             if self._go_cqhttp_status == {}:
                 self.cqapi.send_reply(message, "go-cqhttp 心跳未被正常配置，请检查")
                 logging.warning("go-cqhttp 心跳未被正常配置")
@@ -482,7 +484,7 @@ class cqBot(cqSocket):
                 self._go_cqhttp_status["stat"]["LastMessageTime"],
             )
 
-            self.cqapi.send_reply(message, status_msg)
+            message.reply(status_msg)
         
         self.command(status, "status", {
             "type": "all",
@@ -639,21 +641,21 @@ class cqBot(cqSocket):
         logging.exception(err)
 
     def user_log_srt(self, message):
-        user_id = message["user_id"]
-        if message["message_type"] == "private":
-            user_name = message["sender"]["nickname"]
-        elif message["message_type"] == "group":
-            if message["anonymous"] == None:
-                if message["sender"]["card"].strip() != '':
-                    user_name = message["sender"]["card"]
+        user_id = message.user_id
+        if message.type == "private":
+            user_name = message.sender["nickname"]
+        elif message.type == "group":
+            if message.anonymous == None:
+                if message.sender["card"].strip() != '':
+                    user_name = message.sender["card"]
                 else:
-                    user_name = message["sender"]["nickname"]
+                    user_name = message.sender["nickname"]
             else:
-                user_name = "匿名用户 - %s flag: %s" % (message["anonymous"]["name"],
-                    message["anonymous"]["flag"])
+                user_name = "匿名用户 - %s flag: %s" % (message.anonymous["name"],
+                    message.anonymous["flag"])
 
-        if "group_id" in message:
-            return "%s (qq=%s,群号=%s)" % (user_name, user_id, message["group_id"])
+        if message.type == "group":
+            return "%s (qq=%s,群号=%s)" % (user_name, user_id, message.group_id)
 
         return "%s (qq=%s)" % (user_name, user_id)
 
@@ -678,15 +680,15 @@ class cqBot(cqSocket):
         指令检查
         """
 
-        commandSign, command, commandData = self._set_command_key(message["message"])
+        commandSign, command, commandData = self._set_command_key(message.text)
 
         if commandSign != self.commandSign:
             return False
 
-        if "group_id" in message:
-            from_id = message["group_id"]
+        if message.type == "group":
+            from_id = message.group_id
         else:
-            from_id = message["user_id"]
+            from_id = message.user_id
         
         if command not in self._commandList:
             self.notCommandError(message, from_id)
@@ -702,102 +704,98 @@ class cqBot(cqSocket):
             return False
         
         user_list = self._commandList[command]["user"]
-        if user_list[0] != "all" and message["message_type"] == "group":
-            if "role" not in message["sender"] and "anonymous" not in user_list:
+        if user_list[0] != "all" and message.type == "group":
+            if "role" not in message.sender and "anonymous" not in user_list:
                 self.userPurviewError(message, from_id)
                 return False
-            elif "role" in message["sender"]:
-                if message["sender"]["role"] not in user_list and user_list[0] != "nall":
+            elif "role" in message.sender:
+                if message.sender["role"] not in user_list and user_list[0] != "nall":
                     self.userPurviewError(message, from_id)
                     return False
         
-        if self._commandList[command]["admin"] and message["user_id"] not in self.admin:
+        if self._commandList[command]["admin"] and message.user_id not in self.admin:
             self.purviewError(message, from_id)
             return False
 
-        return commandSign, command, commandData, from_id
+        return commandSign, command, commandData
     
-    def _run_command(self, message, cqCode_list, command_type):
+    def _run_command(self, message, command_type):
         """
         指令运行
         """
-        def run_command(message, cqCode_list, command_type):
+        def run_command(message, command_type):
             try:
                 commandIn = self._check_command(message, command_type)
                 if not commandIn:
                     return
 
-                commandSign, command, commandData, from_id = commandIn
-                self._commandList[command]["function"](commandData, cqCode_list, message, from_id)
+                commandSign, command, commandData = commandIn
+                self._commandList[command]["function"](commandData, message)
 
             except Exception as err:
-                self.runCommandError(message, err, from_id)
+                self.runCommandError(message, err)
         
-        thread = Thread(target=run_command, args=(message, cqCode_list, command_type, ), name="command")
+        thread = Thread(target=run_command, args=(message, command_type, ), name="command")
         thread.setDaemon(True)
         thread.start()
-        
-    def _run_record_command(self, record, message, cqCode_list):
-        try:
-            logging.info("%s 运行记录指令: %s: %s" % (self.user_log_srt(message), record["record_message"]["message"], message["message"]))
-            self._commandList[record["record_command"]]["backFunction"](message, record, cqCode_list)
-        except Exception as err:
-            self.runRecordCommandError(record, err)
-    
+
     def check_command(self, message, from_id):
         """
         指令开始检查勾子
         """
-        logging.info("%s 使用指令: %s" % (self.user_log_srt(message), message["message"]))
+        logging.info("%s 使用指令: %s" % (self.user_log_srt(message), message.text))
 
-    def on_group_msg(self, message, cqCode_list):
+    def on_group_msg(self, message):
         pass
     
     def on_private_msg(self, message, cqCode_list):
         pass
     
-    def _message(self, message):
+    def _message(self, message) -> Message:
         """
         通用消息处理
         """
 
-        # 解析 cqCode
-        cqCode_list = strToCqCodeToDict(message["message"])
+        message = Message(message, self.cqapi)
         # 检查等待回复
-        if self.cqapi._reply_ck(message["user_id"]):
-            self.cqapi._reply_add(message["user_id"], message)
+        if self.cqapi._reply_ck(message.user_id):
+            self.cqapi._reply_add(message.user_id, message)
         
-        return cqCode_list
+        return message
 
-    def _message_private(self, message):
+    def _message_private(self, message) -> Message:
         """
         通用私聊消息处理
         """
         if (message["user_id"] not in self.__user_id_list) and self.__user_id_list != []:
             return
 
-        cqCode_list = self._message(message)
-        self.on_private_msg(message, cqCode_list)
-        self._run_command(message, cqCode_list, "private")
+        message = self._message(message)
+        self.on_private_msg(message)
+        self._run_command(message, "private")
+
+        return message
     
-    def _message_group(self, message):
+    def _message_group(self, message) -> Message:
         """
         通用群消息处理
         """
         if message["group_id"] not in self.__group_id_list and self.__group_id_list != []:
             return
 
-        cqCode_list = self._message(message)
-        self.on_group_msg(message, cqCode_list)
-        for cqCode in cqCode_list:
+        message = self._message(message)
+        self.on_group_msg(message)
+        for cqCode in message.code:
             if cqCode["type"] == "at":
                 if cqCode["data"]["qq"] == str(self.__bot_qq):
-                    self.at_bot(message, cqCode_list, cqCode)
+                    self.at_bot(message, message.code, cqCode)
                     continue
                 
-                self.at(message, cqCode_list, cqCode)
+                self.at(message, message.code, cqCode)
         
-        self._run_command(message, cqCode_list, "group")
+        self._run_command(message, "group")
+
+        return message
     
     def _bot_message_log(self, log, message):
         logging.info(log)
@@ -853,31 +851,31 @@ class cqBot(cqSocket):
         if self.commandSign == "":
             return
 
-        self._bot_message_log("指令 %s 不存在..." % message["message"], message)
+        self._bot_message_log("指令 %s 不存在..." % message.text, message)
     
     def banCommandError(self, message, from_id):
         """
         指令被禁用时错误
         """
-        self._bot_message_log("指令 %s 被禁用!" % message["message"], message)
+        self._bot_message_log("指令 %s 被禁用!" % message.text, message)
     
     def userPurviewError(self, message, from_id):
         """
         指令用户组权限不足时错误
         """
-        self._bot_message_log("%s 用户组权限不足... 指令 %s" % (self.user_log_srt(message), message["message"]), message)
+        self._bot_message_log("%s 用户组权限不足... 指令 %s" % (self.user_log_srt(message), message.text), message)
     
     def purviewError(self, message, from_id):
         """
         指令权限不足时错误 (bot admin)
         """
-        self._bot_message_log("%s 权限不足... 指令 %s" % (self.user_log_srt(message), message["message"]), message)
+        self._bot_message_log("%s 权限不足... 指令 %s" % (self.user_log_srt(message), message.text), message)
     
-    def runCommandError(self, message, err, from_id):
+    def runCommandError(self, message, err):
         """
         指令运行时错误
         """
-        self._bot_message_log("指令 %s 运行时错误... Error: %s" % (message["message"], err), message)
+        self._bot_message_log("指令 %s 运行时错误... Error: %s" % (message.text, err), message)
         logging.exception(err)
     
 
@@ -1065,4 +1063,4 @@ class cqLog:
         rh.setFormatter(formatter)
         
     def setFormat(self):
-        return "[%(asctime)s][%(threadName)s][%(levelname)s] PyCqBot: %(message)s"
+        return "\033[0m[%(asctime)s][%(threadName)s][%(levelname)s] PyCqBot: %(message)s\033[0m"

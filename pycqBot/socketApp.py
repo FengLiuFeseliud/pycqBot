@@ -1,12 +1,80 @@
 import json
 import logging
 import os
+import subprocess
 from threading import Thread
+import time
 import websocket
 import asyncio
 import aiohttp
 import aiofiles
 import os
+
+
+# 默认生成框架 cgo-cqhttp 配置
+GO_CQHTTP_CONFIG = """# go-cqhttp 详细配置见 go-cqhttp 文档 https://docs.go-cqhttp.org/guide/config
+account:
+    encrypt: false
+    status: 0
+    relogin:
+        delay: 3
+        interval: 3
+        max-times: 0
+    use-sso-address: true
+    allow-temp-session: true
+
+heartbeat:
+    interval: 40
+
+message:
+    post-format: string
+    ignore-invalid-cqcode: false
+    force-fragment: false
+    fix-url: false
+    proxy-rewrite: ''
+    report-self-message: false
+    remove-reply-at: false
+    extra-reply-data: false
+    skip-mime-scan: false
+
+output:
+    log-level: trace
+    log-aging: 15
+    log-force-new: true
+    log-colorful: true
+    debug: false
+
+default-middlewares: &default
+    access-token: ''
+    filter: ''
+    rate-limit:
+        enabled: false 
+        frequency: 1
+        bucket: 1
+
+database:
+    leveldb:
+        enable: true
+
+    cache:
+        image: data/image.db
+        video: data/video.db
+
+servers:
+    - http:
+        host: 127.0.0.1
+        port: 8000
+        timeout: 5
+        middlewares:
+            <<: *default
+        post:
+
+    - ws:
+        host: 127.0.0.1
+        port: 5700
+        middlewares:
+            <<: *default
+"""
 
 
 class cqSocket:
@@ -22,6 +90,7 @@ class cqSocket:
         self._host = host
         # websocket 会话 debug
         self._debug = False
+        self._websocket_start_in = True
 
         """
         go-cqhttp 事件
@@ -88,7 +157,65 @@ class cqSocket:
             "meta_event": self.meta_event
         }
     
-    def start(self):
+    def cqhttp_log_print(self, shell_msg):
+        shell_msg = shell_msg.split(": ", maxsplit=1)
+
+        if "INFO" in shell_msg[0]:
+            logging.info(shell_msg[-1])
+            return
+
+        if "WARNING" in shell_msg[0]:
+            logging.warning("go-cqhttp %s" % shell_msg[-1])
+            return
+
+        if "FATAL" in shell_msg[0]:
+            logging.error("go-cqhttp 发生错误 %s" % shell_msg[-1])
+            return
+        
+        print(shell_msg[-1])
+
+    def _set_config(self, go_cqhttp_path):
+        config_path = os.path.join(go_cqhttp_path, "./config.yml")
+        if not os.path.isfile(config_path):
+            with open(config_path, "w", encoding="utf8") as file:
+                file.write(GO_CQHTTP_CONFIG)
+
+    def start(self, go_cqhttp_path="./", print_error=True, start_go_cqhttp=True):
+        """
+        运行 go-cqhttp 并连接 websocket 会话
+        """
+        def cqhttp_start():
+            self._set_config(go_cqhttp_path)
+            subp = subprocess.Popen("cd %s && ./go-cqhttp -faststart" % go_cqhttp_path, shell=True, stdout=subprocess.PIPE)
+
+            while True:
+                shell_msg = subp.stdout.readline().decode("utf-8").strip()
+                if shell_msg.strip() == "":
+                    continue
+
+                if "CQ WebSocket 服务器已启动" in shell_msg:
+                    self._websocket_start_in = False
+                
+                if print_error and "INFO" not in shell_msg:
+                    self.cqhttp_log_print(shell_msg)
+                elif not print_error:
+                    self.cqhttp_log_print(shell_msg)
+        
+        if not start_go_cqhttp:
+            self._websocket_start()
+            return
+
+        thread = Thread(target=cqhttp_start, name="cqhttp_shell")
+        thread.setDaemon(True)
+        thread.start()
+        
+        while self._websocket_start_in:
+            time.sleep(0.5)
+            pass
+
+        self._websocket_start()
+    
+    def _websocket_start(self):
         """
         连接 websocket 会话
         """
