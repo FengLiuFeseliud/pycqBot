@@ -189,7 +189,7 @@ class cqSocket:
             plat = platform.system().lower()
             if plat == 'windows':
                 subp = subprocess.Popen("cd %s && .\go-cqhttp.exe -faststart" % go_cqhttp_path, shell=True, stdout=subprocess.PIPE)
-            elif plat == 'Linux':
+            elif plat == 'linux':
                 subp = subprocess.Popen("cd %s && ./go-cqhttp -faststart" % go_cqhttp_path, shell=True, stdout=subprocess.PIPE)
 
             while True:
