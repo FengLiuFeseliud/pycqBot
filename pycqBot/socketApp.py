@@ -1,6 +1,6 @@
 import json
 import logging
-import os
+import platform
 import subprocess
 from threading import Thread
 import time
@@ -186,7 +186,11 @@ class cqSocket:
         """
         def cqhttp_start():
             self._set_config(go_cqhttp_path)
-            subp = subprocess.Popen("cd %s && ./go-cqhttp -faststart" % go_cqhttp_path, shell=True, stdout=subprocess.PIPE)
+            plat = platform.system().lower()
+            if plat == 'windows':
+                subp = subprocess.Popen("cd %s && .\go-cqhttp.exe -faststart" % go_cqhttp_path, shell=True, stdout=subprocess.PIPE)
+            elif plat == 'Linux':
+                subp = subprocess.Popen("cd %s && ./go-cqhttp -faststart" % go_cqhttp_path, shell=True, stdout=subprocess.PIPE)
 
             while True:
                 shell_msg = subp.stdout.readline().decode("utf-8").strip()
