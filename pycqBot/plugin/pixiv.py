@@ -30,15 +30,15 @@ class pixiv(Plugin):
         self.command_load()
     
     def command_load(self):
-        self.bot.command(self.search_image_random, "搜索用户", {
+        self.bot.command(self.search_user_image_random, "搜索用户", {
                 "help": [
-                    "#搜索用户 - 从指定用户返回指定量图",
-                    "   格式: #搜索用户 [用户名] [指定量]"
+                    "#搜索用户 - 从指定用户返回指定量图 加上模糊 将使用模糊搜索",
+                    "   格式: #搜索用户 [用户名] [指定量] [模糊(可选)]"
                 ]
             }
         )
 
-        self.bot.command(self.search_user_image_random, "搜索作品", {
+        self.bot.command(self.search_image_random, "搜索作品", {
                 "help": [
                     "#搜索作品 - 从指定标签返回指定量图",
                     "   格式: #搜索作品 [标签] [指定量]"

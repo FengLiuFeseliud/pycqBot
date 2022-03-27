@@ -9,7 +9,10 @@ class weather(Plugin):
         super().__init__(bot, cqapi, plugin_config)
 
         self.bot.command(self.weather, "天气", {
-            "type": "all"
+            "help": [
+                "#天气 - 查询指定城市天气",
+                "   格式: 天气 [城市]"
+            ]
         })
 
     async def _weather(self, city, message: Message):
