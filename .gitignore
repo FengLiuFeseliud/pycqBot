@@ -6,3 +6,7 @@
 /download
 /cqLogs
 /main.py
+/pycqBot/plugin/__pycache__
+/plugin_config.yml
+/test.py
+/plugin

@@ -1,2 +1,2 @@
-from pycqBot.cqApi import *
-from pycqBot.object import *
+from pycqBot.cqApi import cqBot, cqHttpApi, cqLog
+from pycqBot.object import Plugin, Message

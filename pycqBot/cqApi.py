@@ -5,8 +5,10 @@ import logging
 from threading import Thread
 import time
 import sqlite3
-from pycqBot.object import Message
+from pycqBot.object import Message, cqEvent
 from pycqBot.socketApp import cqSocket, asyncHttp
+import importlib
+import yaml
 
 
 class cqHttpApi(asyncHttp):
@@ -404,7 +406,7 @@ class cqHttpApi(asyncHttp):
         logging.exception(err)
 
 
-class cqBot(cqSocket):
+class cqBot(cqSocket, cqEvent):
     """
     cqBot 机器人
     """
@@ -413,6 +415,7 @@ class cqBot(cqSocket):
         super().__init__(host)
 
         self.cqapi = cqapi
+        self.__plugin_list = []
         # bot qq
         self.__bot_qq = 0
         # 需处理群
@@ -493,6 +496,80 @@ class cqBot(cqSocket):
                 self.commandSign + "status - 获取 go-cqhttp 状态",
             ]
         })
+
+    def _on_message(self, wsapp, message):
+        event_name = super()._on_message(wsapp, message)
+        if event_name is None:
+            return
+
+        self._plugin_event_run(event_name, message)
+    
+    @staticmethod
+    def _import_plugin_config() -> dict:
+        if os.path.isfile("./plugin_config.yml"):
+            with open("./plugin_config.yml", "r") as file:
+                return yaml.safe_load(file.read())
+        else:
+            with open("./plugin_config.yml", "w") as file:
+                file.write(r"{}")
+
+        return {}
+    
+    def _import_plugin(self, plugin: str, plugin_config: dict):
+        try:
+            if plugin.rsplit(".", maxsplit=1)[0] == "pycqBot.plugin":
+                plugin_obj = importlib.import_module(plugin)
+                plugin = plugin.rsplit(".", maxsplit=1)[-1]
+            else:
+                plugin_obj = importlib.import_module("plugin.%s" % plugin)
+
+            if eval("plugin_obj.%s.__base__.__name__ != 'Plugin'" % plugin):
+                logging.warning("%s 插件未继承 pycqBot.Plugin 不进行加载" % plugin)
+                del plugin_obj
+                return
+            
+            if plugin not in plugin_config:
+                plugin_config[plugin] = {}
+
+            plugin_obj = eval("plugin_obj.%s(self, self.cqapi, plugin_config[plugin])" % plugin)
+            self.__plugin_list.append(plugin_obj)
+
+            logging.debug("%s 插件加载完成" % plugin)
+        except ModuleNotFoundError:
+            self.pluginNotFoundError(plugin)
+        except Exception as err:
+            self.pluginImportError(plugin, err)
+    
+    def _plugin_event_run(self, event_name, *args):
+        for plugin_obj in self.__plugin_list:
+            eval('plugin_obj.%s' % event_name)(*args)
+
+    def plugin_load(self, plugin):
+        """
+        加载插件
+        """
+        plugin_config = self._import_plugin_config()
+        if type(plugin) == str:
+            self._import_plugin(plugin, plugin_config)
+        
+        if type(plugin) == list:
+            for plugin_ in plugin:
+                self._import_plugin(plugin_, plugin_config)
+            
+            logging.info("插件列表加载完成: %s" % plugin)
+    
+    def pluginNotFoundError(self, plugin):
+        """
+        插件不存在
+        """
+        logging.error("plugin 目录下不存在插件 %s " % plugin)
+    
+    def pluginImportError(self, plugin, err):
+        """
+        加载插件时发生错误
+        """
+        logging.error("加载插件 %s 时发生错误: %s" % (plugin, err))
+        logging.exception(err)
         
     def _check_command_options(self, options):
         """
@@ -549,6 +626,7 @@ class cqBot(cqSocket):
         run_count = 0
         while True:
             self.timing_jobs_start(job, run_count)
+            self._plugin_event_run("timing_jobs_start", job, run_count)
             for group_id in self.__group_id_list:
                 if group_id in job["ban"]:
                     return
@@ -557,11 +635,14 @@ class cqBot(cqSocket):
                 try:
                     job["function"](group_id)
                     self.timing_job_end(job, run_count, group_id)
+                    self._plugin_event_run("timing_job_end", job, run_count, group_id)
 
                 except Exception as err:
                     self.runTimingError(job, run_count, err, group_id)
+                    self._plugin_event_run("runTimingError", job, run_count, err, group_id)
 
             self.timing_jobs_end(job, run_count)
+            self._plugin_event_run("timing_jobs_end", job, run_count)
             time.sleep(job["timeSleep"])
     
     def timing(self, function, timing_name, options=None):
@@ -613,18 +694,6 @@ class cqBot(cqSocket):
         """
         self._timing_start()
         logging.info("定时任务启动完成!")
-    
-    def timing_jobs_start(self, job, run_count):
-        """
-        群列表定时任准备执行
-        """
-        pass
-    
-    def timing_job_end(self, job, run_count, group_id):
-        """
-        定时任务被执行
-        """
-        pass
 
     def timing_jobs_end(self, job, run_count):
         """
@@ -744,12 +813,6 @@ class cqBot(cqSocket):
         指令开始检查勾子
         """
         logging.info("%s 使用指令: %s" % (self.user_log_srt(message), message.text))
-
-    def on_group_msg(self, message):
-        pass
-    
-    def on_private_msg(self, message, cqCode_list):
-        pass
     
     def _message(self, message) -> Message:
         """
@@ -772,6 +835,7 @@ class cqBot(cqSocket):
 
         message = self._message(message)
         self.on_private_msg(message)
+        self._plugin_event_run("on_private_msg", message)
         self._run_command(message, "private")
 
         return message
@@ -785,13 +849,17 @@ class cqBot(cqSocket):
 
         message = self._message(message)
         self.on_group_msg(message)
+        self._plugin_event_run("on_group_msg", message)
+
         for cqCode in message.code:
             if cqCode["type"] == "at":
                 if cqCode["data"]["qq"] == str(self.__bot_qq):
                     self.at_bot(message, message.code, cqCode)
+                    self._plugin_event_run("at_bot", message, message.code, cqCode)
                     continue
                 
                 self.at(message, message.code, cqCode)
+                self._plugin_event_run("at", message, message.code, cqCode)
         
         self._run_command(message, "group")
 
@@ -806,12 +874,6 @@ class cqBot(cqSocket):
         接收到 at bot
         """
         logging.info("接收到 at bot %s " % self.user_log_srt(message))
-    
-    def at(self, message, cqCode_list, cqCode):
-        """
-        接收到 at
-        """
-        pass
 
     def message_private_friend(self, message):
         """
@@ -877,157 +939,6 @@ class cqBot(cqSocket):
         """
         self._bot_message_log("指令 %s 运行时错误... Error: %s" % (message.text, err), message)
         logging.exception(err)
-    
-
-    def notice_group_upload(self, message):
-        """
-        群文件上传
-        """
-        pass
-    
-    def notice_group_admin_set(self, message):
-        """
-        群管理员设置
-        """
-        pass
-
-    def notice_group_admin_unset(self, message):
-        """
-        群管理员取消
-        """
-        pass
-    
-    def notice_group_decrease_leave(self, message):
-        """
-        群成员减少 - 主动退群
-        """
-        pass
-    
-    def notice_group_decrease_kick(self, message):
-        """
-        群成员减少 - 成员被踢
-        """
-        pass
-    
-    def notice_group_decrease_kickme(self, message):
-        """
-        群成员减少 - 登录号被踢
-        """
-        pass
-    
-    def notice_group_increase_approve(self, message):
-        """
-        群成员增加 - 同意入群
-        """
-        pass
-
-    def notice_group_increase_invite(self, message):
-        """
-        群成员增加 - 邀请入群
-        """
-        pass
-    
-    def notice_group_ban_ban(self, message):
-        """
-        群禁言
-        """
-        pass
-
-    def notice_group_ban_lift_ban(self, message):
-        """
-        群解除禁言
-        """
-        pass
-
-    def notice_group_recall(self, message):
-        """
-        群消息撤回
-        """
-        pass
-    
-    def notice_notify_lucky_king(self, message):
-        """
-        群红包运气王提示
-        """
-        pass
-    
-    def notice_notify_honor(self, message):
-        """
-        群成员荣誉变更提示
-        honor_type 荣誉类型
-
-        talkative:龙王 
-        performer:群聊之火 
-        emotion:快乐源泉
-        """
-
-        pass
-    
-    def notice_group_card(self, message):
-        """
-        群成员名片更新
-        """
-        pass
-    
-    def notice_friend_add(self, message):
-        """
-        好友添加
-        """
-        pass
-
-    def notice_friend_recall(self, message):
-        """
-        好友消息撤回
-        """
-        pass
-    
-    def notice_notify_poke(self, message):
-        """
-        好友/群内 戳一戳
-        """
-        pass
-    
-    def notice_offline_file(self, message):
-        """
-        接收到离线文件
-        """
-        pass
-
-    def notice_client_status(self, message):
-        """
-        其他客户端在线状态变更
-        """
-        pass
-    
-    def notice_essence_add(self, message):
-        """
-        精华消息添加
-        """
-        pass
-    
-    def notice_essence_delete(self, message):
-        """
-        精华消息移出
-        """
-        pass
-
-    def request_friend(self, message):
-        """
-        加好友请求
-        """
-        pass
-
-    def request_group_add(self, message):
-        """
-        加群请求
-        """
-        pass
-    
-    def request_group_invite(self, message):
-        """
-        加群邀请
-        """
-        pass
 
 
 class cqLog:
@@ -1063,4 +974,4 @@ class cqLog:
         rh.setFormatter(formatter)
         
     def setFormat(self):
-        return "\033[0m[%(asctime)s][%(threadName)s][%(levelname)s] PyCqBot: %(message)s\033[0m"
+        return "\033[0m[%(asctime)s][%(threadName)s/%(levelname)s] PyCqBot: %(message)s\033[0m"

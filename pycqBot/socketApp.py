@@ -263,6 +263,8 @@ class cqSocket:
         event_name = self._set_event_name(data)
         if event_name in self.__event:
             self.__event[event_name](data)
+
+            return event_name
         else:
             logging.warning("未知数据协议:%s" % event_name)
 
@@ -318,21 +320,24 @@ class asyncHttp:
         
         return json
 
-    async def link(self, url, mod="get", data={}, json=True, allow_redirects=False, proxy=None, headers={}):
+    async def link(self, url, mod="get", data={}, json=True, allow_redirects=False, proxy=None, headers={}, encoding=None):
+        if encoding is None:
+            encoding = "utf-8"
+            
         try:
             if mod == "get":
                 async with self._session.get(url, data=data, allow_redirects=allow_redirects, proxy=proxy, headers=headers) as req:
                     if json:
-                        data = await req.json()
+                        data = await req.json(encoding=encoding)
                     else:
-                        data = await req.text()
+                        data = await req.text(encoding=encoding)
             
             if mod == "post":
                 async with self._session.post(url, data=data, allow_redirects=allow_redirects, proxy=proxy, headers=headers) as req:
                     if json:
-                        data = await req.json()
+                        data = await req.json(encoding=encoding)
                     else:
-                        data = await req.text()
+                        data = await req.text(encoding=encoding)
             
             return data
         except Exception as err:
