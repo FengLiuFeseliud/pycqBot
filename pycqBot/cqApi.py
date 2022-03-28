@@ -215,7 +215,7 @@ class cqHttpApi(asyncHttp):
             "user_id":user_id,
             "duration":int(duration) * 60
         }
-        self.add("/send_msg", post_data)
+        self.add("/set_group_ban", post_data)
     
     def set_group_whole_ban(self, group_id, enable=True):
         """
@@ -225,7 +225,7 @@ class cqHttpApi(asyncHttp):
             "group_id":group_id,
             "enable": enable
         }
-        self.add("/send_msg", post_data)
+        self.add("/set_group_whole_ban", post_data)
     
     def set_group_admin(self, group_id, user_id, enable=True):
         """
@@ -236,7 +236,7 @@ class cqHttpApi(asyncHttp):
             "user_id": user_id,
             "enable": enable
         }
-        self.add("/send_msg", post_data)
+        self.add("/set_group_admin", post_data)
     
     def set_group_card(self, group_id, user_id, card=""):
         """
@@ -247,7 +247,7 @@ class cqHttpApi(asyncHttp):
             "user_id": user_id,
             "card": card
         }
-        self.add("/send_msg", post_data)
+        self.add("/set_group_card", post_data)
     
     def set_group_name(self, group_id, group_name):
         """
@@ -257,7 +257,7 @@ class cqHttpApi(asyncHttp):
             "group_id":group_id,
             "group_name": group_name,
         }
-        self.add("/send_msg", post_data)
+        self.add("/set_group_name", post_data)
 
     def set_group_leave(self, group_id, is_dismiss=False):
         """
@@ -267,7 +267,7 @@ class cqHttpApi(asyncHttp):
             "group_id":group_id,
             "is_dismiss": is_dismiss,
         }
-        self.add("/send_msg", post_data)
+        self.add("/set_group_leave", post_data)
     
     def set_group_special_title(self, group_id, user_id, special_title="", duration=-1):
         """
@@ -279,7 +279,7 @@ class cqHttpApi(asyncHttp):
             "special_title": special_title,
             "duration": duration
         }
-        self.add("/send_msg", post_data)
+        self.add("/set_group_special_title", post_data)
 
     def set_friend_add_request(self, flag, approve, remark):
         """
@@ -290,7 +290,7 @@ class cqHttpApi(asyncHttp):
             "approve": approve,
             "remark": remark,
         }
-        self.add("/send_msg", post_data)
+        self.add("/set_friend_add_request", post_data)
     
     def set_group_add_request(self, flag, sub_type, approve=True, reason=""):
         """
@@ -302,7 +302,7 @@ class cqHttpApi(asyncHttp):
             "sub_type": sub_type,
             "reason": reason
         }
-        self.add("/send_msg", post_data)
+        self.add("/set_group_add_request", post_data)
     
     def get_msg(self, message_id):
         """
