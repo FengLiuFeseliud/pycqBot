@@ -176,7 +176,7 @@ class cqEvent:
         """
         pass
     
-    def notice_group_decrease_kickme(self, message):
+    def notice_group_decrease_kick_me(self, message):
         """
         群成员减少 - 登录号被踢
         """

@@ -116,7 +116,7 @@ class cqSocket:
             # 群成员减少
             "notice_group_decrease_leave": self.notice_group_decrease_leave,
             "notice_group_decrease_kick": self.notice_group_decrease_kick,
-            "notice_group_decrease_kickme": self.notice_group_decrease_kickme,
+            "notice_group_decrease_kick_me": self.notice_group_decrease_kick_me,
             # 群成员增加
             "notice_group_increase_approve": self.notice_group_increase_approve,
             "notice_group_increase_invite": self.notice_group_increase_invite,
@@ -258,13 +258,13 @@ class cqSocket:
         处理数据不建议修改, 错误修改将导致无法运行
         除非已经了解如何工作
         """
-        data = json.loads(message)
+        message = json.loads(message)
         
-        event_name = self._set_event_name(data)
+        event_name = self._set_event_name(message)
         if event_name in self.__event:
-            self.__event[event_name](data)
+            self.__event[event_name](message)
 
-            return event_name
+            return message, event_name
         else:
             logging.warning("未知数据协议:%s" % event_name)
 

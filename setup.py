@@ -10,7 +10,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pycqBot",
-    version="0.4.0.2",
+    version="0.4.1",
     description="go-cqhttp python 框架，可以用于快速塔建 bot",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -22,7 +22,7 @@ setup(
     url="https://github.com/FengLiuFeseliud/pycqBot",
     author="FengLiuFeseliud",
     author_email="17351198406@qq.com",
-
+    
     packages=find_packages(),
     include_package_data=True,
     platforms="any",

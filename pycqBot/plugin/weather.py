@@ -4,6 +4,9 @@ from pycqBot.object import Plugin, Message
 from pycqBot.cqApi import cqBot, cqHttpApi
 
 class weather(Plugin):
+    """
+    天气查询
+    """
 
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config) -> None:
         super().__init__(bot, cqapi, plugin_config)

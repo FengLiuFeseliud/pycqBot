@@ -7,6 +7,19 @@ from pycqBot.object import Plugin, Message
 
 
 class pixiv(Plugin):
+    """
+    基于 pixiv 的搜图/pid/用户
+
+    插件配置
+    -------------------------
+
+    forward_qq: 转发使用的 qq 号
+    forward_name: 转发使用的名字
+    cookie: pixiv 用户 cookie
+    proxy: 代理 ip
+    max_pid_len: pid 最多返回多少图片 默认 20
+    max_rlen: 其它功能最多返回多少图片 默认 10
+    """
 
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config) -> None:
         super().__init__(bot, cqapi, plugin_config)

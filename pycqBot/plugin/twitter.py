@@ -5,6 +5,16 @@ from pycqBot.cqApi import cqBot, cqHttpApi
 
 
 class twitter(Plugin):
+    """
+    基于 twitter API 监听推文
+
+    插件配置
+    ------------------------
+
+    monitor: 监听推文的用户名列表
+    proxy: 代理 ip
+    bearerToken: twitter bearer token 需要在 twitter 申请 https://developer.twitter.com/
+    """
 
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config) -> None:
         super().__init__(bot, cqapi, plugin_config)

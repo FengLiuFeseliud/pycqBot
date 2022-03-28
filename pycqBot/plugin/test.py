@@ -3,6 +3,9 @@ from pycqBot.object import Plugin, Message
 
 
 class test(Plugin):
+    """
+    测试插件
+    """
 
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config) -> None:
         super().__init__(bot, cqapi, plugin_config)

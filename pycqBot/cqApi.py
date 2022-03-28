@@ -350,6 +350,15 @@ class cqHttpApi(asyncHttp):
         }
         return self._link("/get_image", post_data)
     
+    def delete_msg(self, message_id):
+        """
+        撤回消息
+        """
+        post_data = {
+            "message_id": message_id
+        }
+        self.add("/delete_msg", post_data)
+    
     async def _cqhttp_download_file(self, url, headers):
         """
         go-cqhttp 的内置下载 (异步)
@@ -411,7 +420,7 @@ class cqBot(cqSocket, cqEvent):
     cqBot 机器人
     """
 
-    def __init__(self, cqapi, host, group_id_list=[], user_id_list=[], options={}):
+    def __init__(self, cqapi: cqHttpApi, host: str, group_id_list: list=[], user_id_list: list=[], options: dict={}):
         super().__init__(host)
 
         self.cqapi = cqapi
@@ -498,7 +507,7 @@ class cqBot(cqSocket, cqEvent):
         })
 
     def _on_message(self, wsapp, message):
-        event_name = super()._on_message(wsapp, message)
+        message, event_name = super()._on_message(wsapp, message)
         if event_name is None:
             return
 
@@ -939,6 +948,25 @@ class cqBot(cqSocket, cqEvent):
         """
         self._bot_message_log("指令 %s 运行时错误... Error: %s" % (message.text, err), message)
         logging.exception(err)
+    
+    def notice_group_decrease_kick_me(self, message):
+        """
+        群成员减少 - 登录号被踢
+        """
+        if message["group_id"] in self.__group_id_list:
+            self.__group_id_list.remove(message["group_id"])
+
+        async def _notice_group_decrease_kick_me(message):
+            post_data = {
+                "user_id": message["user_id"]
+            }
+            user_data = await self.cqapi._asynclink("/get_stranger_info", post_data)
+            if user_data is None:
+                return
+            
+            logging.info("bot 被 %s (qq=%s) T出群 685735591" % (user_data["data"]["nickname"], user_data["data"]["user_id"]))
+
+        self.cqapi.add_task(_notice_group_decrease_kick_me(message))
 
 
 class cqLog:

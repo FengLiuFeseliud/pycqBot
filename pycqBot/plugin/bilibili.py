@@ -5,10 +5,20 @@ import time
 from lxml import etree
 from pycqBot.cqApi import cqBot, cqHttpApi
 from pycqBot.cqCode import image
-from pycqBot.object import Plugin
+from pycqBot.object import Message, Plugin
 
 
 class bilibili(Plugin):
+    """
+    bilibili 监听动态/直播 消息 自动解析 bilibili qq 小程序分享信息
+
+    插件配置
+    ---------------------------
+
+    monitorLive: 监听直播 uid 列表
+    monitorDynamic: 监听动态 uid 列表
+    timeSleep: 监听间隔 (秒)
+    """
 
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config) -> None:
         super().__init__(bot, cqapi, plugin_config)
@@ -28,13 +38,26 @@ class bilibili(Plugin):
                     "time": 0,
                     "data": {}
                 }
-            
+        
+        if self._monitor_live_uids == [] and self._monitor_dynamic_uids == []:
+            return
+
         self.monitor()
         self.monitor_send_clear()
-
+        
         bot.timing(self.monitor_send, "bilibili_monitor_send", {
             "timeSleep": plugin_config["timeSleep"] if "timeSleep" in plugin_config else 45
         })
+    
+    def on_group_msg(self, message: Message):
+        for code in message.code:
+            if code["type"] == "json":
+                self.get_link(message, code)
+    
+    def on_private_msg(self, message: Message):
+        for code in message.code:
+            if code["type"] == "json":
+                self.get_link(message, code)
     
     def timing_jobs_start(self, job, run_count):
         if job["name"] == "bilibili_monitor_send":
@@ -186,25 +209,25 @@ class bilibili(Plugin):
         
         return False
     
-    async def _get_link(self, group_id, cq_code):
+    async def _get_link(self, message: Message, cq_code):
         """
         异步发送QQ小程序分享信息
         """
         try:
-            message = await self._share_type_check(cq_code)
-            if message == False:
+            link_message = await self._share_type_check(cq_code)
+            if link_message == False:
                 return
 
-            self.cqapi.send_group_msg(group_id, message)
-            logging.debug("解析到了分享信息 %s" % message)
+            message.reply_not_code(link_message)
+            logging.debug("解析到了分享信息 %s" % link_message)
         except Exception as err:
             self.getShareVideoError(err)
     
-    def get_link(self, group_id, cq_code):
+    def get_link(self, message: Message, cq_code):
         """
         发送QQ小程序分享信息
         """
-        self.cqapi.add_task(self._get_link(group_id, cq_code))
+        self.cqapi.add_task(self._get_link(message, cq_code))
     
     def set_cv_text(self, html):
         """
@@ -552,7 +575,7 @@ class bilibili(Plugin):
         异步监听
         """
         try:
-            if self._monitor_live_uids != {}:
+            if self._monitor_live_uids != []:
                 await self._monitor_live()
                 self._live_monitor_in = False
             else:
@@ -561,7 +584,7 @@ class bilibili(Plugin):
             self.monitorLiveError(err)
         
         try:
-            if self._monitor_dynamic_uids != {}:
+            if self._monitor_dynamic_uids != []:
                 await self._monitor_dynamic()
                 self._dynamic_monitor_in = False
             else:
