@@ -4,7 +4,8 @@ import platform
 import subprocess
 from threading import Thread
 import time
-import websocket
+from websockets import ConnectionClosed
+import websockets
 import asyncio
 import aiohttp
 import aiofiles
@@ -167,9 +168,17 @@ class cqSocket:
         if "WARNING" in shell_msg[0]:
             logging.warning("go-cqhttp %s" % shell_msg[-1])
             return
+        
+        if "DEBUG" in shell_msg[0]:
+            logging.debug(shell_msg[-1])
+            return
+        
+        if "ERROR" in shell_msg[0]:
+            logging.error("go-cqhttp 发生错误 %s" % shell_msg[-1])
+            return
 
         if "FATAL" in shell_msg[0]:
-            logging.error("go-cqhttp 发生错误 %s" % shell_msg[-1])
+            logging.error("go-cqhttp 发生致命错误 %s" % shell_msg[-1])
             return
         
         print(shell_msg[-1])
@@ -223,16 +232,23 @@ class cqSocket:
         """
         连接 websocket 会话
         """
-        if self._debug:
-            websocket.enableTrace(True)
+        async def main_logic():
+            logging.info("正在连接 go-cqhttp websocket 服务")
+            while True:
+                try:
+                    # 只接收 event
+                    async with websockets.connect(self._host) as websocket:
+                        while True:
+                            try:
+                                self._on_message(await websocket.recv())
+                            except Exception as err:
+                                self.on_error(err)
+
+                except ConnectionClosed as err:
+                    logging.error("websocket 会话被关闭 %s" % err)
+                    await asyncio.sleep(2)
         
-        wsapp = websocket.WebSocketApp(self._host,
-                on_message=self._on_message, 
-                on_error=self.on_error,
-                on_open=self.on_open,
-            )
-        # 打开连接
-        wsapp.run_forever()
+        asyncio.run(main_logic())
     
     def _set_event_name(self, message):
         """
@@ -253,7 +269,7 @@ class cqSocket:
         return event_name
 
 
-    def _on_message(self, wsapp, message):
+    def _on_message(self, message):
         """
         处理数据不建议修改, 错误修改将导致无法运行
         除非已经了解如何工作
@@ -268,13 +284,7 @@ class cqSocket:
         else:
             logging.warning("未知数据协议:%s" % event_name)
 
-    def on_open(self, wsapp):
-        """
-        准备打开 websocket 会话
-        """
-        logging.info("正在连接 go-cqhttp websocket 服务")
-
-    def on_error(self, wsapp, error):
+    def on_error(self, error):
         """
         websocket 会话错误
         """

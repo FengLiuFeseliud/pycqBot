@@ -387,6 +387,21 @@ class cqHttpApi(asyncHttp):
         """
         return self._link("/get_status")
     
+    def upload_group_file(self, group_id, file, name, folder=None):
+        """
+        上传群文件
+        """
+        post_data = {
+            "group_id": group_id,
+            "file": "file://%s" % file,
+            "name": name
+        }
+
+        if folder is not None:
+            post_data["folder"] = folder
+
+        self.add("/upload_group_file", post_data)
+    
     def recordMessageInvalid(self, record_message_data, sql_link):
         """
         长效消息存储 消息失效
@@ -506,8 +521,8 @@ class cqBot(cqSocket, cqEvent):
             ]
         })
 
-    def _on_message(self, wsapp, message):
-        message, event_name = super()._on_message(wsapp, message)
+    def _on_message(self, message):
+        message, event_name = super()._on_message(message)
         if event_name is None:
             return
 
