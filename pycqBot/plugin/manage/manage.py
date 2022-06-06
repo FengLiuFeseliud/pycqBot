@@ -25,6 +25,7 @@ class manage(Plugin):
         self._group_request_all = plugin_config["groupRequestAll"] if "groupRequestAll" in plugin_config else False
         self._group_request_delete_reply = plugin_config["groupRequestDeleteReply"] if "groupRequestDeleteReply" in plugin_config else "拒绝群邀请"
         self._reply_time = plugin_config["replyTime"] if "replyTime" in plugin_config else 60
+        self._recall_text = plugin_config["recall_text"] if "recall_text" in plugin_config else "有一条消息无了 群友还没看清楚呢！ {name}：{msg}"
 
         self.command_load()
         
@@ -92,3 +93,12 @@ class manage(Plugin):
         
         logging.info("保存来自 qq=%s 的 group_id=%s 群邀请" % (message["user_id"],message["group_id"] ))
         self._request_group_message_list.append(message)
+
+    def notice_group_recall(self, message):
+        message = self.cqapi.get_msg(message["message_id"])["data"]
+        self.cqapi.send_group_msg(message, self._recall_text.format(
+            name = message["sender"]["nickname"], 
+            msg = message["message"])
+        )
+    
+    

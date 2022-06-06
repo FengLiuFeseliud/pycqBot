@@ -108,7 +108,11 @@ class cqSocket:
             "message_private_other": self.message_private_other,
             # 群消息
             "message_group_normal": self.message_group_normal,
-            "message_group_anonymous": self.message_group_normal,
+            "message_group_anonymous": self.message_group_anonymous,
+            # 自身群消息上报
+            "message_sent_group_normal": self.message_sent_group_normal,
+            # 自身消息私聊上报
+            "message_sent_private_friend": self.message_sent_private_friend,
             # 群文件上传
             "notice_group_upload": self.notice_group_upload,
             # 群管理员变动

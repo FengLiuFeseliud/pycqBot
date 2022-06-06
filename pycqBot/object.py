@@ -127,10 +127,22 @@ class cqEvent:
         群临时会话私聊消息
         """
         pass
+
+    def message_sent_private_friend(self, message):
+        """
+        自身消息私聊上报
+        """
+        pass
+
+    def message_group_anonymous(self, message):
+        """
+        群匿名消息
+        """
+        pass
     
     def message_private_group_self(self, message):
         """
-        群中自身私聊消息
+        群中自身消息上报
         """
         pass
     

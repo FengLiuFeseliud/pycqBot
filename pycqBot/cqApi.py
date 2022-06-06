@@ -186,6 +186,16 @@ class cqHttpApi(asyncHttp):
             "messages": message,
         }
         self.add("/send_group_forward_msg", post_data)
+    
+    def send_private_forward_msg(self, user_id, message):
+        """
+        发送合并转发 ( 私聊 )
+        """
+        post_data = {
+            "user_id":user_id,
+            "messages": message,
+        }
+        self.add("/send_private_forward_msg", post_data)
 
     def send_reply(self, from_message, message, auto_escape=False):
         """
@@ -542,10 +552,10 @@ class cqBot(cqSocket, cqEvent):
     def _import_plugin(self, plugin: str, plugin_config: dict):
         try:
             if plugin.rsplit(".", maxsplit=1)[0] == "pycqBot.plugin":
-                plugin_obj = importlib.import_module(plugin)
                 plugin = plugin.rsplit(".", maxsplit=1)[-1]
+                plugin_obj = importlib.import_module(f"pycqBot.plugin.{plugin}.{plugin}")
             else:
-                plugin_obj = importlib.import_module("plugin.%s" % plugin)
+                plugin_obj = importlib.import_module("plugin.%s.%s" % plugin)
 
             if eval("plugin_obj.%s.__base__.__name__ != 'Plugin'" % plugin):
                 logging.warning("%s 插件未继承 pycqBot.Plugin 不进行加载" % plugin)
@@ -849,6 +859,14 @@ class cqBot(cqSocket, cqEvent):
             self.cqapi._reply_add(message.user_id, message)
         
         return message
+    
+    def _message_run(self, message, message_type) -> Message:
+        message = self._message(message)
+        self._plugin_event_run(f"on_{message_type}_msg", message)
+        self._run_command(message, message_type)
+
+        return message
+
 
     def _message_private(self, message) -> Message:
         """
@@ -857,10 +875,8 @@ class cqBot(cqSocket, cqEvent):
         if (message["user_id"] not in self.__user_id_list) and self.__user_id_list != []:
             return
 
-        message = self._message(message)
+        message = self._message_run(message, "private")
         self.on_private_msg(message)
-        self._plugin_event_run("on_private_msg", message)
-        self._run_command(message, "private")
 
         return message
     
@@ -871,9 +887,8 @@ class cqBot(cqSocket, cqEvent):
         if message["group_id"] not in self.__group_id_list and self.__group_id_list != []:
             return
 
-        message = self._message(message)
+        message = self._message_run(message, "group")
         self.on_group_msg(message)
-        self._plugin_event_run("on_group_msg", message)
 
         for cqCode in message.code:
             if cqCode["type"] == "at":
@@ -884,8 +899,6 @@ class cqBot(cqSocket, cqEvent):
                 
                 self.at(message, message.code, cqCode)
                 self._plugin_event_run("at", message, message.code, cqCode)
-        
-        self._run_command(message, "group")
 
         return message
     
@@ -910,6 +923,27 @@ class cqBot(cqSocket, cqEvent):
         群临时会话私聊消息
         """
         self._message_private(message)
+
+    def message_sent_private_friend(self, message):
+        """
+        自身消息私聊上报
+        """
+        self._message_private(message)
+
+    def message_group_anonymous(self, message):
+        """
+        群匿名消息
+        """
+        self._message_group(message)
+    
+    def message_private_group_self(self, message):
+        """
+        群中自身消息上报
+        """
+        self._message_group(message)
+
+    def message_sent_group_normal(self, message):
+        self._message_group(message)
     
     def message_private_group_self(self, message):
         """
