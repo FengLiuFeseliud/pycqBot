@@ -11,6 +11,17 @@ import aiohttp
 import aiofiles
 import os
 
+tit = """
+#################################################################
+██████╗ ██╗   ██╗ ██████╗ ██████╗ ██████╗  ██████╗ ████████╗
+██╔══██╗╚██╗ ██╔╝██╔════╝██╔═══██╗██╔══██╗██╔═══██╗╚══██╔══╝
+██████╔╝ ╚████╔╝ ██║     ██║   ██║██████╔╝██║   ██║   ██║   
+██╔═══╝   ╚██╔╝  ██║     ██║▄▄ ██║██╔══██╗██║   ██║   ██║   
+██║        ██║   ╚██████╗╚██████╔╝██████╔╝╚██████╔╝   ██║   
+╚═╝        ╚═╝    ╚═════╝ ╚══▀▀═╝ ╚═════╝  ╚═════╝    ╚═╝   
+                                            v0.4.4  BY FengLiu
+#################################################################
+"""
 
 # 默认生成框架 cgo-cqhttp 配置
 GO_CQHTTP_CONFIG = """# go-cqhttp 详细配置见 go-cqhttp 文档 https://docs.go-cqhttp.org/guide/config
@@ -194,6 +205,7 @@ class cqSocket:
                 file.write(GO_CQHTTP_CONFIG)
 
     def start(self, go_cqhttp_path="./", print_error=True, start_go_cqhttp=True):
+        print(tit)
         """
         运行 go-cqhttp 并连接 websocket 会话
         """
@@ -231,6 +243,8 @@ class cqSocket:
             pass
 
         self._websocket_start()
+
+        return self
     
     def _websocket_start(self):
         """

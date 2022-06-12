@@ -555,7 +555,7 @@ class cqBot(cqSocket, cqEvent):
                 plugin = plugin.rsplit(".", maxsplit=1)[-1]
                 plugin_obj = importlib.import_module(f"pycqBot.plugin.{plugin}.{plugin}")
             else:
-                plugin_obj = importlib.import_module("plugin.%s.%s" % plugin)
+                plugin_obj = importlib.import_module(f"plugin.{plugin}.{plugin}")
 
             if eval("plugin_obj.%s.__base__.__name__ != 'Plugin'" % plugin):
                 logging.warning("%s 插件未继承 pycqBot.Plugin 不进行加载" % plugin)
@@ -591,6 +591,8 @@ class cqBot(cqSocket, cqEvent):
                 self._import_plugin(plugin_, plugin_config)
             
             logging.info("插件列表加载完成: %s" % plugin)
+        
+        return self
     
     def pluginNotFoundError(self, plugin):
         """
@@ -656,6 +658,8 @@ class cqBot(cqSocket, cqEvent):
             self._commandList[name] = options
             self._commandList[name]["function"] = function
 
+        return self
+
     def _timing_job(self, job):
         run_count = 0
         while True:
@@ -695,6 +699,8 @@ class cqBot(cqSocket, cqEvent):
         thread.start()
 
         logging.info("创建定时任务 %s " % timing_name)
+
+        return self
     
     def set_bot_status(self, message):
         self.__bot_qq = message["self_id"]

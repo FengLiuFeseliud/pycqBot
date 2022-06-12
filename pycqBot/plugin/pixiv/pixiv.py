@@ -40,34 +40,25 @@ class pixiv(Plugin):
             "cookie": plugin_config["cookie"]
         }
 
-        self.command_load()
-    
-    def command_load(self):
-        self.bot.command(self.search_user_image_random, "搜索用户", {
+        bot.command(self.search_user_image_random, "搜索用户", {
                 "help": [
                     "#搜索用户 - 从指定用户返回指定量图 加上模糊 将使用模糊搜索",
                     "   格式: #搜索用户 [用户名] [指定量] [模糊(可选)]"
                 ]
             }
-        )
-
-        self.bot.command(self.search_image_random, "搜索作品", {
+        ).command(self.search_image_random, "搜索作品", {
                 "help": [
                     "#搜索作品 - 从指定标签返回指定量图",
                     "   格式: #搜索作品 [标签] [指定量]"
                 ]
             }
-        )
-
-        self.bot.command(self.search_following_image_random, "图来", {
+        ).command(self.search_following_image_random, "图来", {
             "help": [
                 "#图来 - 从本 bot pixiv 关注画师返回随机5张图",
                 "这个质量可控，跟着 bot xp 随机",
                 "   格式: #图来"
             ]
-        })
-
-        self.bot.command(self.search_pid, "pid", {
+        }).command(self.search_pid, "pid", {
                 "help": [
                     "#pid - 从指定 pid 返回图",
                     "   格式: #pid [pid]"

@@ -27,15 +27,10 @@ class manage(Plugin):
         self._reply_time = plugin_config["replyTime"] if "replyTime" in plugin_config else 60
         self._recall_text = plugin_config["recall_text"] if "recall_text" in plugin_config else "有一条消息无了 群友还没看清楚呢！ {name}：{msg}"
 
-        self.command_load()
-        
-    def command_load(self):
-        self.bot.command(self.get_request_group_invite, "群邀请", {
+        bot.command(self.get_request_group_invite, "群邀请", {
             "type": "all",
             "admin": True
-        })
-
-        self.bot.command(self.delete_request_group_invite, "群邀请清空", {
+        }).command(self.delete_request_group_invite, "群邀请清空", {
             "type": "all",
             "admin": True
         })

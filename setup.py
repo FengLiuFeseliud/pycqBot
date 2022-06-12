@@ -10,7 +10,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pycqBot",
-    version="0.4.3",
+    version="0.4.4",
     description="go-cqhttp python 框架，可以用于快速塔建 bot",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -24,9 +24,13 @@ setup(
     author_email="17351198406@qq.com",
     
     packages=find_packages(),
+    package_data = {
+        '': ['*.py'],
+    },
+    
+
     include_package_data=True,
     platforms="any",
-    package_data={'pycqBot': ['plugin/*.py']},
     install_requires=["requests", 
         "websockets", 
         "asyncio", 
