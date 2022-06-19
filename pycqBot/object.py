@@ -1,12 +1,16 @@
+from __future__ import annotations
+from typing import Any, Union, TYPE_CHECKING
 from pycqBot.cqCode import reply, strToCqCode, get_cq_code
+
+if TYPE_CHECKING:
+    from pycqBot import cqBot, cqHttpApi
 
 
 class Message:
 
-
-    def __init__(self, message_data, cqapi):
+    def __init__(self, message_data: dict[str, Any], cqapi: cqHttpApi):
         self._cqapi = cqapi
-        self.id = message_data["message_id"]
+        self.id = message_data["message_id"]        
         self.sub_type = message_data["sub_type"]
         self.type = message_data["message_type"]
         self.text = message_data["message"]
@@ -17,13 +21,13 @@ class Message:
         self.temp_source = None
         self.anonymous = None
         self.message_data = message_data
-        self.code_str = strToCqCode(self.text)
-        self.code = [get_cq_code(code_str) for code_str in self.code_str]
+        self.code_str: list[str] = strToCqCode(self.text)
+        self.code: list[dict[str, Union[str, dict[str, Any]]]] = [get_cq_code(code_str) for code_str in self.code_str]
 
         self._ck_message(message_data)
 
     
-    def _ck_message(self, message_data):
+    def _ck_message(self, message_data: dict[str, Any]) -> None:
         if "group_id" in message_data:
             self.group_id = message_data["group_id"]
         
@@ -35,19 +39,19 @@ class Message:
             self.temp_source = message_data["temp_source"]
             return
     
-    def reply(self, message, auto_escape=False):
+    def reply(self, message: str, auto_escape: bool=False) -> None:
         """
         回复该消息
         """
         self._cqapi.send_reply(self, "%s%s" % (reply(msg_id=self.id), message), auto_escape)
-    
-    def reply_not_code(self, message, auto_escape=False):
+
+    def reply_not_code(self, message: str, auto_escape: bool=False) -> None:
         """
         回复该消息 不带 cqcode
         """
         self._cqapi.send_reply(self, message, auto_escape)
     
-    def record(self, time_end):
+    def record(self, time_end: int) -> None:
         """
         存储该消息
         """
@@ -140,9 +144,15 @@ class cqEvent:
         """
         pass
     
-    def message_private_group_self(self, message):
+    def message_sent_group_normal(self, message):
         """
         群中自身消息上报
+        """
+        pass
+    
+    def message_private_group_self(self, message):
+        """
+        群中自身消息
         """
         pass
     
@@ -311,7 +321,7 @@ class cqEvent:
 
 class Plugin(cqEvent):
 
-    def __init__(self, bot, cqapi, plugin_config) -> None:
+    def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config: dict[str, Any]) -> None:
         self.bot = bot
         self.cqapi = cqapi
         self.plugin_config = plugin_config

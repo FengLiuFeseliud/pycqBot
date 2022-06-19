@@ -1,8 +1,9 @@
+from typing import Any, Union
 from time import time
 import json
 
 
-def strToCqCode(message):
+def strToCqCode(message: str) -> list[str]:
     """
     提取字符串中的 cqCode 字符串
     """
@@ -41,17 +42,17 @@ def strToCqCode(message):
 
     return cq_code_list
 
-def strToCqCodeToDict(message):
+def strToCqCodeToDict(message: str) -> list[dict[str, Union[str, dict[str, Any]]]]:
     """
     提取字符串中的 cqCode 字符串转换为字典
     """
-    CqCodeList = strToCqCode(message)
-    for count in range(0, len(CqCodeList)):
-        CqCodeList[count] = get_cq_code(CqCodeList[count])
+    CqCodeList = []
+    for item in strToCqCode(message):
+        CqCodeList.append(get_cq_code(item))
     
     return CqCodeList
 
-def set_cq_code(code):
+def set_cq_code(code: dict[str, Any]) -> str:
     """
     转换 pycqBot 的 cqCode 字典为 cqCode 字符串
     """
@@ -62,14 +63,14 @@ def set_cq_code(code):
     cqCode = "[CQ:%s%s]" % (code["type"], data_str)
     return cqCode
 
-def get_cq_code(code_str):
+def get_cq_code(code_str: str) -> dict[str, Union[str, dict[str, Any]]]:
     """
     转换 cqCode 字符串为字典
     """
-    code_str = code_str.lstrip("[CQ:").rsplit("]")
-    code_list = code_str[0].split(",")
+    code_str = code_str.lstrip("[CQ:").rsplit("]")[0]
+    code_list = code_str.split(",")
 
-    cq_code = {
+    cq_code: dict[str, Any] = {
         "type": code_list[0],
         "data":{
 
@@ -90,7 +91,7 @@ def get_cq_code(code_str):
     
     return cq_code
 
-def cqJsonStrToDict(cq_json_str):
+def cqJsonStrToDict(cq_json_str: str) -> dict[str, Any]:
     """
     转换 cqCode 中的 json 字符串为字典
     """
@@ -101,7 +102,7 @@ def cqJsonStrToDict(cq_json_str):
 
     return json.loads(cq_json_str)
 
-def DictTocqJsonStr(dict):
+def DictTocqJsonStr(dict: dict[str, Any]) -> str:
     """
     转换字典为 cqCode 中的 json 字符串
     """
@@ -114,7 +115,7 @@ def DictTocqJsonStr(dict):
 
     return cq_json_str
 
-def DictToCqCode(dict):
+def DictToCqCode(dict: dict) -> str:
     """
     转换字典为 cqCode json
     """
@@ -125,7 +126,7 @@ def DictToCqCode(dict):
         }
     })
 
-def node_list(message_list, name, uin):
+def node_list(message_list: list[str], name: str, uin: int) -> str:
     """
     合并转发列表生成
     """
@@ -135,7 +136,7 @@ def node_list(message_list, name, uin):
     
     return json.dumps(node_list_data, separators=(',', ':'))
 
-def face(face_id):
+def face(face_id: int) -> str:
     """
     QQ 表情
     QQ 表情 ID 表: https://github.com/kyubotics/coolq-http-api/wiki/%E8%A1%A8%E6%83%85-CQ-%E7%A0%81-ID-%E8%A1%A8
@@ -149,7 +150,7 @@ def face(face_id):
     })
 
 
-def record(file, magic=0, cache=1, proxy=1):
+def record(file: str, magic: int=0, cache: int=1, proxy: int=1) -> str:
     """
     发语音
     """
@@ -165,7 +166,7 @@ def record(file, magic=0, cache=1, proxy=1):
     })
 
 
-def video(file):
+def video(file: str) -> str:
     """
     短视频
     """
@@ -173,12 +174,12 @@ def video(file):
     return set_cq_code({
         "type": "video",
         "data": {
-            "file": "http://baidu.com/1.mp4",
+            "file": file,
         }
     })
 
 
-def at(qq, name=""):
+def at(qq: int, name: str="") -> str:
     """
     @某人
     """
@@ -192,7 +193,7 @@ def at(qq, name=""):
     })
 
 
-def rps():
+def rps() -> str:
     """
     猜拳魔法表情
     """
@@ -203,7 +204,7 @@ def rps():
     })
 
 
-def dice():
+def dice() -> str:
     """
     掷骰子魔法表情
     """
@@ -214,7 +215,7 @@ def dice():
     })
 
 
-def shake():
+def shake() -> str:
     """
     窗口抖动（戳一戳）
     """
@@ -225,7 +226,7 @@ def shake():
     })
 
 
-def anonymous():
+def anonymous() -> str:
     """
     匿名发消息
     """
@@ -236,12 +237,12 @@ def anonymous():
     })
 
 
-def share(url, title, content="", image=""):
+def share(url: str, title: str, content: str="", image: str="") -> str:
     """
     链接分享
     """
 
-    cq_code = {
+    cq_code: dict[str, Any] = {
         "type": "share",
         "data": {
             "url": url,
@@ -258,7 +259,7 @@ def share(url, title, content="", image=""):
     return set_cq_code(cq_code)
 
 
-def contact(type, contact_id):
+def contact(type: str, contact_id: int) -> str:
     """
     推荐好友/群
     """
@@ -266,22 +267,22 @@ def contact(type, contact_id):
     return set_cq_code({
         "type": "contact",
         "type": {
-            "url": type,
+            "type": type,
             "id": contact_id
         }
     })
 
 
-def location(lat, lon, title="", content=""):
+def location(lat: float, lon: float, title: str="", content: str="") -> str:
     """
     位置
     """
 
-    cq_code = {
+    cq_code: dict[str, Any] = {
         "type": "location",
         "data": {
-            "lat": "39.8969426",
-            "lon": "116.3109099"
+            "lat": lat,
+            "lon": lon
         }
     }
 
@@ -294,7 +295,7 @@ def location(lat, lon, title="", content=""):
     return set_cq_code(cq_code)
 
 
-def music(type, id):
+def music(type: str, id: int) -> str:
     """
     音乐分享
     """
@@ -308,12 +309,12 @@ def music(type, id):
     })
 
 
-def music_my(url, audio, title, content="", image=""):
+def music_my(url: str, audio: str, title: str, content: str="", image: str="") -> str:
     """
     音乐自定义分享
     """
 
-    cq_code = {
+    cq_code: dict[str, Any] = {
         "type": "music",
         "data": {
             "type": "custom",
@@ -332,12 +333,12 @@ def music_my(url, audio, title, content="", image=""):
     return set_cq_code(cq_code)
 
 
-def image(file, url="", type="", cache=1, show_id=""):
+def image(file: str, url: str="", type: str="", cache: int=1, show_id: str="") -> str:
     """
     图片
     """
 
-    cq_code = {
+    cq_code: dict[str, Any] = {
         "type": "image",
         "data":{
             "file": file,
@@ -357,8 +358,10 @@ def image(file, url="", type="", cache=1, show_id=""):
     return set_cq_code(cq_code)
 
 
-def node(message, name, uin):
+def node(message: str, name: str, uin: int) -> dict[str, Union[str, dict[str, Any]]]:
     """
+    合并转发消息节点
+
     特殊 cqCode 不返回字符串 返回 node 字典
     """
 
@@ -371,12 +374,12 @@ def node(message, name, uin):
         }
     }
 
-def reply(text="", seq="", msg_id="", qq=""):
+def reply(text: str="", seq: str="", msg_id: str="", qq: Union[int, str]="") -> str:
     """
     回复
     """
 
-    cq_code = {
+    cq_code: dict[str, Any] = {
         "type": "reply",
         "data":{
             "id": msg_id
@@ -392,7 +395,7 @@ def reply(text="", seq="", msg_id="", qq=""):
     return set_cq_code(cq_code)
 
 
-def redbag(title):
+def redbag(title: str) -> str:
     """
     红包
     """
@@ -405,7 +408,7 @@ def redbag(title):
     })
 
 
-def poke(qq):
+def poke(qq: int) -> str:
     """
     戳一戳
     """

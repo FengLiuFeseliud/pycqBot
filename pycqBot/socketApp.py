@@ -1,10 +1,10 @@
+from typing import Coroutine, Optional
 import json
 import logging
 import platform
 import subprocess
 from threading import Thread
 import time
-from websockets import ConnectionClosed
 import websockets
 import asyncio
 import aiohttp
@@ -19,7 +19,7 @@ tit = """
 ██╔═══╝   ╚██╔╝  ██║     ██║▄▄ ██║██╔══██╗██║   ██║   ██║   
 ██║        ██║   ╚██████╗╚██████╔╝██████╔╝╚██████╔╝   ██║   
 ╚═╝        ╚═╝    ╚═════╝ ╚══▀▀═╝ ╚═════╝  ╚═════╝    ╚═╝   
-                                            v0.4.4  BY FengLiu
+                                            v0.4.5  BY FengLiu
 #################################################################
 """
 
@@ -173,38 +173,38 @@ class cqSocket:
             "meta_event": self.meta_event
         }
     
-    def cqhttp_log_print(self, shell_msg):
-        shell_msg = shell_msg.split(": ", maxsplit=1)
+    def cqhttp_log_print(self, shell_msg: str) -> None:
+        shell_msg = shell_msg.split(": ", maxsplit=1)[0]
 
-        if "INFO" in shell_msg[0]:
+        if "INFO" in shell_msg:
             logging.info(shell_msg[-1])
             return
 
-        if "WARNING" in shell_msg[0]:
+        if "WARNING" in shell_msg:
             logging.warning("go-cqhttp %s" % shell_msg[-1])
             return
         
-        if "DEBUG" in shell_msg[0]:
+        if "DEBUG" in shell_msg:
             logging.debug(shell_msg[-1])
             return
         
-        if "ERROR" in shell_msg[0]:
+        if "ERROR" in shell_msg:
             logging.error("go-cqhttp 发生错误 %s" % shell_msg[-1])
             return
 
-        if "FATAL" in shell_msg[0]:
+        if "FATAL" in shell_msg:
             logging.error("go-cqhttp 发生致命错误 %s" % shell_msg[-1])
             return
         
         print(shell_msg[-1])
 
-    def _set_config(self, go_cqhttp_path):
+    def _set_config(self, go_cqhttp_path) -> None:
         config_path = os.path.join(go_cqhttp_path, "./config.yml")
         if not os.path.isfile(config_path):
             with open(config_path, "w", encoding="utf8") as file:
                 file.write(GO_CQHTTP_CONFIG)
 
-    def start(self, go_cqhttp_path="./", print_error=True, start_go_cqhttp=True):
+    def start(self, go_cqhttp_path: str="./", print_error: bool=True, start_go_cqhttp: bool=True)  -> None:
         print(tit)
         """
         运行 go-cqhttp 并连接 websocket 会话
@@ -243,32 +243,25 @@ class cqSocket:
             pass
 
         self._websocket_start()
-
-        return self
     
-    def _websocket_start(self):
+    def _websocket_start(self) -> None:
         """
         连接 websocket 会话
         """
         async def main_logic():
             logging.info("正在连接 go-cqhttp websocket 服务")
             while True:
-                try:
-                    # 只接收 event
-                    async with websockets.connect(self._host) as websocket:
-                        while True:
-                            try:
-                                self._on_message(await websocket.recv())
-                            except Exception as err:
-                                self.on_error(err)
-
-                except ConnectionClosed as err:
-                    logging.error("websocket 会话被关闭 %s" % err)
-                    await asyncio.sleep(2)
+                # 只接收 event
+                async with websockets.connect(self._host) as websocket:
+                    while True:
+                        try:
+                            self._on_message(await websocket.recv())
+                        except Exception as err:
+                            self.on_error(err)
         
         asyncio.run(main_logic())
     
-    def _set_event_name(self, message):
+    def _set_event_name(self, message: dict) -> str:
         """
         检查事件类型并返回对应事件名
         """
@@ -287,22 +280,24 @@ class cqSocket:
         return event_name
 
 
-    def _on_message(self, message):
+    def _on_message(self, message: str) -> Optional[tuple[dict, str]]:
         """
         处理数据不建议修改, 错误修改将导致无法运行
         除非已经了解如何工作
         """
-        message = json.loads(message)
+        message_data = json.loads(message)
         
-        event_name = self._set_event_name(message)
+        event_name = self._set_event_name(message_data)
         if event_name in self.__event:
-            self.__event[event_name](message)
+            self.__event[event_name](message_data)
 
-            return message, event_name
+            return message_data, event_name
         else:
             logging.warning("未知数据协议:%s" % event_name)
+        
+        return None
 
-    def on_error(self, error):
+    def on_error(self, error: Exception) -> None:
         """
         websocket 会话错误
         """
@@ -311,18 +306,19 @@ class cqSocket:
 
 class asyncHttp:
 
-    def __init__(self, download_path="./download", chunk_size=1024) -> None:
+    def __init__(self, download_path: str="./download", chunk_size: int=1024) -> None:
         self._loop = asyncio.new_event_loop()
         self._session = aiohttp.ClientSession(loop=self._loop)
         self._download_path = download_path
         self.chunk_size = chunk_size
+        self.http = ""
 
         if not os.path.isdir(download_path):
             os.makedirs(download_path)
         
         self.__asyncHttp_loop()
 
-    async def _download_file(self, file_name, file_url):
+    async def _download_file(self, file_name: str, file_url: str) -> None:
         try:
             async with self._session.get(file_url) as req:
                 if req.status != 200:
@@ -337,18 +333,29 @@ class asyncHttp:
         except Exception as err:
             self.downloadFileRunError(err)
     
-    async def _asynclink(self, api, data={}):
+    async def _asynclink(self, api: str, data: dict=None) -> Optional[dict]:
+        if data is None:
+            data = {}
+
         json = await self.link("%s%s" % (self.http, api), mod="post", data=data)
+        if json == {} or json is None:
+            logging.warning("cqAPI 响应: None / {}")
+            return None
+
         logging.debug("cqAPI 响应: %s" % json)
-        if json == {}:
-            return
             
         if json["retcode"] != 0:
             self.apiLinkError(json)
         
         return json
 
-    async def link(self, url, mod="get", data={}, json=True, allow_redirects=False, proxy=None, headers={}, encoding=None):
+    async def link(self, url: str, mod: str="get", data: dict=None, json: bool=True, allow_redirects: bool=False, proxy: str=None, headers: dict=None, encoding: str=None) -> Optional[dict]:
+        if headers is None:
+            headers = {}
+        
+        if data is None:
+            data = {}
+        
         if encoding is None:
             encoding = "utf-8"
             
@@ -356,34 +363,39 @@ class asyncHttp:
             if mod == "get":
                 async with self._session.get(url, data=data, allow_redirects=allow_redirects, proxy=proxy, headers=headers) as req:
                     if json:
-                        data = await req.json(encoding=encoding)
+                        http_data = await req.json(encoding=encoding)
                     else:
-                        data = await req.text(encoding=encoding)
+                        http_data = await req.text(encoding=encoding)
             
             if mod == "post":
                 async with self._session.post(url, data=data, allow_redirects=allow_redirects, proxy=proxy, headers=headers) as req:
                     if json:
-                        data = await req.json(encoding=encoding)
+                        http_data = await req.json(encoding=encoding)
                     else:
-                        data = await req.text(encoding=encoding)
+                        http_data = await req.text(encoding=encoding)
             
-            return data
+            return http_data
         except Exception as err:
             self.apiLinkRunError(err)
+
+            return None
     
-    def add_task(self, coroutine):
+    def add_task(self, coroutine: Coroutine) -> None:
         asyncio.run_coroutine_threadsafe(coroutine, self._loop)
     
-    def add(self, api, data={}):
+    def add(self, api: str, data: dict=None) -> None:
+        if data is None:
+            data = {}
+
         asyncio.run_coroutine_threadsafe(self._asynclink(api, data), self._loop)
 
-    def download_path(self, download_path):
+    def download_path(self, download_path: str) -> None:
         if not os.path.isdir(download_path):
             os.makedirs(download_path)
 
         self._download_path = download_path
     
-    def __asyncHttp_loop(self):
+    def __asyncHttp_loop(self) -> None:
         def task_loop_():
             asyncio.set_event_loop(self._loop)
             self._loop.run_forever()
@@ -392,45 +404,49 @@ class asyncHttp:
         thread.setDaemon(True)
         thread.start()
 
-    async def _download_img(self, file):
+    async def _download_img(self, file: str) -> None:
         post_data = {
             "file": file
         }
-        img_file = (await self._asynclink("/get_image", data=post_data))["data"]
+        img_data = await self._asynclink("/get_image", data=post_data)
+        if img_data is None:
+            return None
+
+        img_file = img_data["data"]
         await self._download_file(img_file["filename"], img_file["url"])
 
-    def download_file(self, file_name, file_url):
+    def download_file(self, file_name: str, file_url: str) -> None:
         asyncio.run_coroutine_threadsafe(self._download_file(file_name, file_url), self._loop)
     
-    def download_img(self, file):
+    def download_img(self, file: str) -> None:
         asyncio.run_coroutine_threadsafe(self._download_img(file), self._loop)
     
-    def download_end(self, file_name, file_url, code):
+    def download_end(self, file_name: str, file_url: str, code: int) -> None:
         """
         下载完成
         """
         logging.info("%s 下载完成! code: %s" % (file_name, code))
 
-    def downloadFileError(self, file_name, file_url, code):
+    def downloadFileError(self, file_name: str, file_url: str, code: int) -> None:
         """
         下载失败
         """
         logging.error("%s 下载失败... code: %s" % (file_name, code))
     
-    def downloadFileRunError(self, err):
+    def downloadFileRunError(self, err: Exception) -> None:
         """
         下载时发生错误
         """
         logging.error("下载文件时发生错误 Error: %s" % err)
         logging.exception(err)
     
-    def apiLinkError(self, err_json):
+    def apiLinkError(self, err_json: dict) -> None:
         """
         cqapi发生错误
         """
         logging.error("api 发生错误 %s: %s code: %s" % (err_json["msg"], err_json["wording"], err_json["retcode"]))
     
-    def apiLinkRunError(self, err):
+    def apiLinkRunError(self, err: Exception) -> None:
         """
         cqapi请求时发生错误
         """

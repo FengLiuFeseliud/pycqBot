@@ -1,3 +1,4 @@
+from pyexpat.errors import messages
 from pycqBot.cqApi import cqBot, cqHttpApi
 from pycqBot.object import Plugin, Message
 
@@ -22,7 +23,7 @@ class test(Plugin):
         message.reply(" ".join(commandData))
     
     def codestr(self, commandData, message: Message):
-        message.reply(message.code_str)
+        message.reply("".join(message.code_str))
 
     def code(self, commandData, message: Message):
         message.reply("code len: %s code: %s" % (len(message.code), message.code))

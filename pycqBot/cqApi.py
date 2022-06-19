@@ -1,3 +1,4 @@
+from typing import Union, Optional, Any, Callable
 import requests
 import os
 from logging import handlers
@@ -13,14 +14,14 @@ import yaml
 
 class cqHttpApi(asyncHttp):
 
-    def __init__(self, host="http://127.0.0.1:8000", download_path="./download", chunk_size=1024) -> None:
+    def __init__(self, host: str="http://127.0.0.1:8000", download_path: str="./download", chunk_size: int=1024) -> None:
         super().__init__(download_path, chunk_size)
         self.http = host
-        self.__reply_list_msg = {}
+        self.__reply_list_msg: dict[int, Optional[Message]] = {}
         self.thread_count = 4
         self.bot_qq = 0
 
-    def create_bot(self, host="ws://127.0.0.1:5700", group_id_list=[], user_id_list=[], options={}):
+    def create_bot(self, host: str="ws://127.0.0.1:5700", group_id_list: list[int]=[], user_id_list: list[int]=[], options: dict[str, Any]={}) -> "cqBot":
         """
         直接创建一个 bot 
         """
@@ -28,7 +29,7 @@ class cqHttpApi(asyncHttp):
             self, host, group_id_list, user_id_list, options
         )
     
-    def _create_sql_link(self, db_path, sleep):
+    def _create_sql_link(self, db_path: str, sleep: int) -> None:
         """
         长效消息存储 初始化
         """
@@ -56,7 +57,7 @@ class cqHttpApi(asyncHttp):
         thread.setDaemon(True)
         thread.start()
     
-    def _record_message_ck(self, sleep):
+    def _record_message_ck(self, sleep: int) -> None:
         """
         长效消息存储 检查失效消息
         """
@@ -74,7 +75,7 @@ class cqHttpApi(asyncHttp):
 
             time.sleep(sleep)
 
-    def record_message(self, message_data, time_end):
+    def record_message(self, message_data: Message, time_end: int) -> None:
         """
         长效消息存储
         """
@@ -92,22 +93,24 @@ class cqHttpApi(asyncHttp):
         except Exception as err:
             self.recordMessageError(message_data, time_int, time_end, err)
     
-    def record_message_get(self, user_id):
+    def record_message_get(self, user_id: int) -> Optional[list[dict[str, Any]]]:
         """
         长效消息存储 获取
         """
         try:
             with sqlite3.connect(self._db_path) as sql_link:
                 sql_cursor = sql_link.cursor()
-                data_list = sql_cursor.execute("SELECT * FROM `Message` WHERE userId = '%s'" % user_id)
+                data_cursor = sql_cursor.execute("SELECT * FROM `Message` WHERE userId = '%s'" % user_id)
 
-                data_list = data_list.fetchall()
+                data_list = data_cursor.fetchall()
                 return data_list
 
         except Exception as err:
             self.recordMessageGetError(user_id, err)
+        
+        return None
 
-    def reply(self, user_id, sleep) -> Message or None:
+    def reply(self, user_id, sleep) -> Optional[Message]:
         """
         等待回复
         """
@@ -126,7 +129,7 @@ class cqHttpApi(asyncHttp):
 
         return reply_msg
     
-    def _reply_ck(self, user_id):
+    def _reply_ck(self, user_id: int) -> bool:
         """
         等待回复 检查
         """
@@ -135,15 +138,15 @@ class cqHttpApi(asyncHttp):
         
         return False
     
-    def _reply_add(self, user_id, msg):
+    def _reply_add(self, user_id: int, msg: Message) -> None:
         """
         等待回复 添加回复数据
         """
         self.__reply_list_msg[user_id] = msg
 
-    def _link(self, api, data={}):
+    def _link(self, api: str, data: dict[str, Any]={}) -> Optional[dict[Any, Any]]:
         try:
-            with requests.post(self.http + api, data=data) as req:
+            with requests.post(f"{self.http}{api}", data=data) as req:
                 json =  req.json()
                 logging.debug("cqAPI 响应: %s" % json)
                 if json["retcode"] != 0:
@@ -153,8 +156,10 @@ class cqHttpApi(asyncHttp):
             
         except Exception as err:
             self.apiLinkRunError(err)
+        
+        return None
     
-    def send_private_msg(self, user_id, message, group_id="", auto_escape=False):
+    def send_private_msg(self, user_id: int, message: str, group_id: Union[int, str]="", auto_escape: bool=False) -> None:
         """
         发送私聊消息
         """
@@ -166,7 +171,7 @@ class cqHttpApi(asyncHttp):
         }
         self.add("/send_msg", post_data)
 
-    def send_group_msg(self, group_id, message, auto_escape=False):
+    def send_group_msg(self, group_id: Union[int, str], message: str, auto_escape: bool=False) -> None:
         """
         发送群消息
         """
@@ -177,7 +182,7 @@ class cqHttpApi(asyncHttp):
         }
         self.add("/send_msg", post_data)
     
-    def send_group_forward_msg(self, group_id, message):
+    def send_group_forward_msg(self, group_id: int, message: str) -> None:
         """
         发送合并转发 ( 群 )
         """
@@ -187,7 +192,7 @@ class cqHttpApi(asyncHttp):
         }
         self.add("/send_group_forward_msg", post_data)
     
-    def send_private_forward_msg(self, user_id, message):
+    def send_private_forward_msg(self, user_id: int, message: str) -> None:
         """
         发送合并转发 ( 私聊 )
         """
@@ -197,17 +202,20 @@ class cqHttpApi(asyncHttp):
         }
         self.add("/send_private_forward_msg", post_data)
 
-    def send_reply(self, from_message, message, auto_escape=False):
+    def send_reply(self, from_message: Message, message: str, auto_escape: bool=False) -> None: 
         """
         发送回复
         """
         if from_message.type == "group":
+            if from_message.group_id is None:
+                return
+
             self.send_group_msg(from_message.group_id, message, auto_escape)
         
         if from_message.type == "private":
             self.send_private_msg(from_message.user_id, message, auto_escape)
     
-    def get_forward(self, forward_id):
+    def get_forward(self, forward_id: int) -> Optional[dict[Any, Any]]:
         """
         获取合并转发
         """
@@ -216,7 +224,7 @@ class cqHttpApi(asyncHttp):
         }
         return self._link("/get_forward_msg", post_data)
     
-    def set_group_ban(self, group_id, user_id, duration=30):
+    def set_group_ban(self, group_id: int, user_id: int, duration: int=30) -> None:
         """
         群组单人禁言
         """
@@ -227,7 +235,7 @@ class cqHttpApi(asyncHttp):
         }
         self.add("/set_group_ban", post_data)
     
-    def set_group_whole_ban(self, group_id, enable=True):
+    def set_group_whole_ban(self, group_id: int, enable: bool=True) -> None:
         """
         群组全员禁言
         """
@@ -237,7 +245,7 @@ class cqHttpApi(asyncHttp):
         }
         self.add("/set_group_whole_ban", post_data)
     
-    def set_group_admin(self, group_id, user_id, enable=True):
+    def set_group_admin(self, group_id: int, user_id: int, enable: bool=True) -> None:
         """
         群组设置管理员
         """
@@ -248,7 +256,7 @@ class cqHttpApi(asyncHttp):
         }
         self.add("/set_group_admin", post_data)
     
-    def set_group_card(self, group_id, user_id, card=""):
+    def set_group_card(self, group_id: int, user_id: int, card: str="") -> None:
         """
         设置群名片 ( 群备注 )
         """
@@ -259,7 +267,7 @@ class cqHttpApi(asyncHttp):
         }
         self.add("/set_group_card", post_data)
     
-    def set_group_name(self, group_id, group_name):
+    def set_group_name(self, group_id: int, group_name: str) -> None:
         """
         设置群名
         """
@@ -269,7 +277,7 @@ class cqHttpApi(asyncHttp):
         }
         self.add("/set_group_name", post_data)
 
-    def set_group_leave(self, group_id, is_dismiss=False):
+    def set_group_leave(self, group_id: int, is_dismiss: bool=False) -> None:
         """
         退出群组
         """
@@ -444,37 +452,36 @@ class cqBot(cqSocket, cqEvent):
     """
     cqBot 机器人
     """
-
-    def __init__(self, cqapi: cqHttpApi, host: str, group_id_list: list=[], user_id_list: list=[], options: dict={}):
+    def __init__(self, cqapi: cqHttpApi, host: str, group_id_list: list[int]=[], user_id_list: list[int]=[], options: dict[str, Union[list, str, int]]={}):
         super().__init__(host)
 
         self.cqapi = cqapi
-        self.__plugin_list = []
+        self.__plugin_list: list[object] = []
         # bot qq
-        self.__bot_qq = 0
+        self.__bot_qq: int= 0
         # 需处理群
-        self.__group_id_list = group_id_list
+        self.__group_id_list: list[int] = group_id_list
         # 需处理私信
-        self.__user_id_list = user_id_list
+        self.__user_id_list: list[int] = user_id_list
         # 指令列表
-        self._commandList = {}
+        self._commandList: dict[str, dict] = {}
         # 定时任务
-        self._timingList = {}
+        self._timingList: dict[str, dict] = {}
         # 管理员列表
-        self.admin = []
+        self.admin: list[int] = []
         # 指令标志符
-        self.commandSign = "#"
+        self.commandSign: str = "#"
         # 帮助信息模版
-        self.help_text_format = "本bot帮助信息!\n{help_command_text}\npycqbot v0.1.0"
-        self.help_command_text = ""
+        self.help_text_format: str = "本bot帮助信息!\n{help_command_text}\npycqbot v0.1.0"
+        self.help_command_text: str = ""
         # 长效消息存储
-        self.messageSql = False
+        self.messageSql: bool = False
         # 长效消息存储 数据库目录
-        self.messageSqlPath = "./"
+        self.messageSqlPath: str = "./"
         # 长效消息存储 清理间隔
-        self.messageSqlClearTime = 60
+        self.messageSqlClearTime: int = 60
         # go_cqhttp 状态 通过心跳更新
-        self._go_cqhttp_status = {}
+        self._go_cqhttp_status: dict = {}
 
         for key in options.keys():
             if type(options[key]) is str:
@@ -549,7 +556,7 @@ class cqBot(cqSocket, cqEvent):
 
         return {}
     
-    def _import_plugin(self, plugin: str, plugin_config: dict):
+    def _import_plugin(self, plugin: str, plugin_config: dict) -> None:
         try:
             if plugin.rsplit(".", maxsplit=1)[0] == "pycqBot.plugin":
                 plugin = plugin.rsplit(".", maxsplit=1)[-1]
@@ -574,11 +581,11 @@ class cqBot(cqSocket, cqEvent):
         except Exception as err:
             self.pluginImportError(plugin, err)
     
-    def _plugin_event_run(self, event_name, *args):
+    def _plugin_event_run(self, event_name: str, *args) -> None:
         for plugin_obj in self.__plugin_list:
-            eval('plugin_obj.%s' % event_name)(*args)
+            exec(f'plugin_obj.{event_name}(*args)')
 
-    def plugin_load(self, plugin):
+    def plugin_load(self, plugin: Union[str, list[str]]) -> "cqBot":
         """
         加载插件
         """
@@ -594,20 +601,20 @@ class cqBot(cqSocket, cqEvent):
         
         return self
     
-    def pluginNotFoundError(self, plugin):
+    def pluginNotFoundError(self, plugin: str) -> None:
         """
         插件不存在
         """
         logging.error("plugin 目录下不存在插件 %s " % plugin)
     
-    def pluginImportError(self, plugin, err):
+    def pluginImportError(self, plugin: str, err: Exception) -> None:
         """
         加载插件时发生错误
         """
         logging.error("加载插件 %s 时发生错误: %s" % (plugin, err))
         logging.exception(err)
         
-    def _check_command_options(self, options):
+    def _check_command_options(self, options: dict[str, Any]) -> dict[str, Any]:
         """
         检查指令设置
         """
@@ -633,19 +640,19 @@ class cqBot(cqSocket, cqEvent):
         
         return options
     
-    def _check_timing_options(self, options, timing_name):
+    def _check_timing_options(self, options: dict[str, Any], timing_name: str) -> Optional[dict[str, Any]]:
         options["name"] = timing_name
 
         if "timeSleep" not in options:
             logging.warning("定时任务 %s 没有指定 timeSleep 间隔, 中止创建" % timing_name)
-            return False
+            return None
 
         if "ban" not in options:
             options["ban"] = []
 
         return options
         
-    def command(self, function, command_name, options=None):
+    def command(self, function: Callable[[list[str], Message], None], command_name: Union[str, list[str]], options: dict[str, Any]=None) -> "cqBot":
         if options is None:
             options = {}
             
@@ -660,7 +667,7 @@ class cqBot(cqSocket, cqEvent):
 
         return self
 
-    def _timing_job(self, job):
+    def _timing_job(self, job: dict[str, Any]) -> None:
         run_count = 0
         while True:
             self.timing_jobs_start(job, run_count)
@@ -683,13 +690,17 @@ class cqBot(cqSocket, cqEvent):
             self._plugin_event_run("timing_jobs_end", job, run_count)
             time.sleep(job["timeSleep"])
     
-    def timing(self, function, timing_name, options=None):
+    def timing(self, function: Callable[[int], None], timing_name: str, options: dict[str, Any]=None) -> "cqBot":
         if options is None:
             options = {}
 
-        options = self._check_timing_options(options, timing_name)
+        ck_options = self._check_timing_options(options, timing_name)
+        if ck_options is None:
+            return self
+
+        options = ck_options
         if not options:
-            return
+            return self
 
         options["function"] = function
         self._timingList[timing_name] = options
@@ -702,11 +713,11 @@ class cqBot(cqSocket, cqEvent):
 
         return self
     
-    def set_bot_status(self, message):
+    def set_bot_status(self, message: dict[str, Any]) -> None:
         self.__bot_qq = message["self_id"]
         self.cqapi.bot_qq = message["self_id"]
     
-    def _meta_event_connect(self, message):
+    def _meta_event_connect(self, message: dict[str, Any]) -> None:
         """
         连接响应
         """
@@ -874,24 +885,24 @@ class cqBot(cqSocket, cqEvent):
         return message
 
 
-    def _message_private(self, message) -> Message:
+    def _message_private(self, message) -> Optional[Message]:
         """
         通用私聊消息处理
         """
         if (message["user_id"] not in self.__user_id_list) and self.__user_id_list != []:
-            return
+            return None
 
         message = self._message_run(message, "private")
         self.on_private_msg(message)
 
         return message
     
-    def _message_group(self, message) -> Message:
+    def _message_group(self, message) -> Optional[Message]:
         """
         通用群消息处理
         """
         if message["group_id"] not in self.__group_id_list and self.__group_id_list != []:
-            return
+            return None
 
         message = self._message_run(message, "group")
         self.on_group_msg(message)
@@ -939,12 +950,6 @@ class cqBot(cqSocket, cqEvent):
     def message_group_anonymous(self, message):
         """
         群匿名消息
-        """
-        self._message_group(message)
-    
-    def message_private_group_self(self, message):
-        """
-        群中自身消息上报
         """
         self._message_group(message)
 
