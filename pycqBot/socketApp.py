@@ -6,6 +6,7 @@ import subprocess
 from threading import Thread
 import time
 import websockets
+from websockets.exceptions import ConnectionClosedError
 import asyncio
 import aiohttp
 import aiofiles
@@ -103,6 +104,9 @@ class cqSocket:
         # websocket 会话 debug
         self._debug = False
         self._websocket_start_in = True
+
+        self.reconnection_sleep = 10
+        self.reconnection = 3
 
         """
         go-cqhttp 事件
@@ -248,16 +252,32 @@ class cqSocket:
         """
         连接 websocket 会话
         """
+        old_reconnection = self.reconnection
         async def main_logic():
-            logging.info("正在连接 go-cqhttp websocket 服务")
-            while True:
-                # 只接收 event
-                async with websockets.connect(self._host) as websocket:
-                    while True:
-                        try:
-                            self._on_message(await websocket.recv())
-                        except Exception as err:
-                            self.on_error(err)
+            while self.reconnection != -1:
+                try:
+                    logging.info("正在连接 go-cqhttp websocket 服务")
+                    # 只接收 event
+                    async with websockets.connect(self._host) as websocket:
+                        self.reconnection = old_reconnection
+                        while 1:
+                            try:
+                                self._on_message(await websocket.recv())
+                            except ConnectionClosedError as crerr:
+                                logging.warning(crerr)
+                                break
+
+                            except Exception as err:
+                                self.on_error(err)
+
+                except ConnectionRefusedError as crerr:
+                    logging.warning(crerr)
+
+                self.reconnection -= 1
+                logging.warning(f"{self.reconnection_sleep}秒后 重新连接 websocket 服务 ({old_reconnection - self.reconnection}/{old_reconnection})")
+                time.sleep(self.reconnection_sleep)
+            
+            logging.fatal(f"无法连接 websocket 服务 host: {self._host}")
         
         asyncio.run(main_logic())
     
