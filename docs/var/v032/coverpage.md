@@ -8,7 +8,7 @@
 ![stars](https://img.shields.io/github/stars/FengLiuFeseliud/pycqBot)
 ![license](https://img.shields.io/github/license/FengLiuFeseliud/pycqBot)
 
-[开始阅读!](/pycqbot/README)
+[开始阅读!](/pycqBot/README)
 [个人网站](https://sakuratools.top)
 [项目GitHub](https://github.com/FengLiuFeseliud/pycqBot)
 
