@@ -12,6 +12,6 @@
 [个人网站](https://sakuratools.top)
 [项目GitHub](https://github.com/FengLiuFeseliud/pycqBot)
 
-![](https://img.sakuratools.top/bg.png@0x0x0x80)
+![](/pycqBot/img/bg.png)
 
 ![color](#2b313a)
