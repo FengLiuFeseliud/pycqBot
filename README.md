@@ -6,7 +6,7 @@ go-cqhttp python 框架，可以用于快速塔建 bot
 
 **项目文档不更新的话 请刷新浏览器缓存**
 
-[项目文档：https://github.com/FengLiuFeseliud/pycqBot.docs](https://github.com/FengLiuFeseliud/pycqBot.docs)
+[项目文档 (移动至 Github Pages): https://fengliufeseliud.github.io/pycqBot/](https://fengliufeseliud.github.io/pycqBot/)
 
 [go-cqhttp](https://github.com/Mrs4s/go-cqhttp)
 
