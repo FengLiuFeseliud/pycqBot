@@ -1,0 +1,17 @@
+<!-- docs/var/_sidebar.md -->
+
+* [介绍](/pycqbot/README)
+* [bot 设置](/pycqbot/botOptions)
+* [cqHttpApi](/pycqbot/cqHttpApi)
+* [cqEvent](/pycqbot/cqEvent)
+* [cqCode](/pycqbot/cqCode)
+* [内置模块](/pycqbot/module/)
+* [更新日志 / 历史版本](/pycqbot/var/)
+    * [v0.2.0](/pycqbot/var/v020/)
+        * [介绍](/pycqbot/var/v020/v020)
+        * [bot 设置](/pycqbot/var/v020/botOptions)
+        * [cqHttpApi](/pycqbot/var/v020/cqHttpApi)
+        * [cqEvent](/pycqbot/var/v020/cqEvent)
+        * [cqCode](/pycqbot/var/v020/cqCode)
+        * [内置模块](/pycqbot/var/v020/module/)
+            * [bilibili](/pycqbot/var/v020/module/bilibili)

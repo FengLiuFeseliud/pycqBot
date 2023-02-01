@@ -178,26 +178,30 @@ class cqSocket:
         }
     
     def cqhttp_log_print(self, shell_msg: str) -> None:
-        shell_msg = shell_msg.split(": ", maxsplit=1)[0]
+        try:
+            shell_msg_data = shell_msg.split(": ", maxsplit=1)[1]
+        except IndexError:
+            print(shell_msg)
+            return
 
         if "INFO" in shell_msg:
-            logging.info(shell_msg[-1])
+            logging.info(shell_msg_data)
             return
 
         if "WARNING" in shell_msg:
-            logging.warning("go-cqhttp %s" % shell_msg[-1])
+            logging.warning("go-cqhttp 警告 %s" % shell_msg_data)
             return
         
         if "DEBUG" in shell_msg:
-            logging.debug(shell_msg[-1])
+            logging.debug(shell_msg_data)
             return
         
         if "ERROR" in shell_msg:
-            logging.error("go-cqhttp 发生错误 %s" % shell_msg[-1])
+            logging.error("go-cqhttp 发生错误 %s" % shell_msg_data)
             return
 
         if "FATAL" in shell_msg:
-            logging.error("go-cqhttp 发生致命错误 %s" % shell_msg[-1])
+            logging.error("go-cqhttp 发生致命错误 %s" % shell_msg_data)
             return
         
         print(shell_msg[-1])

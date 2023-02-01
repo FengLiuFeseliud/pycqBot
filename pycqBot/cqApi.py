@@ -548,10 +548,10 @@ class cqBot(cqSocket, cqEvent):
     @staticmethod
     def _import_plugin_config() -> dict:
         if os.path.isfile("./plugin_config.yml"):
-            with open("./plugin_config.yml", "r") as file:
+            with open("./plugin_config.yml", "r", encoding="utf8") as file:
                 return yaml.safe_load(file.read())
         else:
-            with open("./plugin_config.yml", "w") as file:
+            with open("./plugin_config.yml", "w", encoding="utf8") as file:
                 file.write(r"{}")
 
         return {}
