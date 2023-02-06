@@ -58,7 +58,7 @@ def cqmb_send_new_msg(from_id):
 
 myCqBot(cqapi ,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
     timing={
         "cqmb":{
@@ -95,7 +95,7 @@ cqBot(cqapi ,
     # 使用新的 on_group_msg
     on_group_msg=on_group_msg,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 

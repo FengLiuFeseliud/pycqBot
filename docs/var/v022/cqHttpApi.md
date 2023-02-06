@@ -44,7 +44,7 @@ def on_group_msg(message, cq_code_list):
 bot = cqBot(cqapi ,
     on_group_msg=on_group_msg,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 
@@ -103,7 +103,7 @@ bot = cqBot(cqapi ,
     # 绑定函数 on_group_msg
     on_group_msg=on_group_msg,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 
@@ -183,7 +183,7 @@ def on_group_msg(message, cq_code_list):
 cqBot(cqapi,
     on_group_msg=on_group_msg,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 

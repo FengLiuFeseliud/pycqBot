@@ -75,7 +75,7 @@ def echo(commandData, message, from_id):
 cqBot(cqapi,
     group_id_list=[
         # 需处理的 QQ 群信息 为空处理所有
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
     command = {
         # 设置指令为 echo
@@ -116,7 +116,7 @@ def echo(commandData, cqCodeList, message, from_id):
 
 cqBot(cqapi,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
     command = {
         "echo": {
@@ -155,7 +155,7 @@ def echo(commandData, cqCodeList, message, from_id):
 
 cqBot(cqapi,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
     command = {
         "echo": {
@@ -221,7 +221,7 @@ def code(commandData, cqCodeList, message, from_id):
 cqBot(cqapi,
     on_group_msg=on_group_msg,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
     command = {
         # 注意使用空格分割指令与 cqCode 如 #code+空格+图片+...
@@ -263,7 +263,7 @@ def show(commandData, cqCodeList, message, from_id):
 
 cqBot(cqapi,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
     command = {
         "show": {
@@ -307,7 +307,7 @@ cqapi = cqHttpApi()
 # 使用新的 myCqBot
 myCqBot(cqapi,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
     options={
         "commandSign": "#",
@@ -328,7 +328,7 @@ def timejob(from_id):
 
 cqBot(cqapi,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
     options={
         "commandSign": "#",

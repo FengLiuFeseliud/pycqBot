@@ -80,7 +80,7 @@ def echo(commandData, cqCodeList, message, from_id):
 bot = cqapi.create_bot(
     group_id_list=[
         # 需处理的 QQ 群信息 为空处理所有
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 
@@ -115,7 +115,7 @@ def echo(commandData, cqCodeList, message, from_id):
 
 bot = cqapi.create_bot(
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 
@@ -152,7 +152,7 @@ def echo(commandData, cqCodeList, message, from_id):
 bot = cqapi.create_bot(
     group_id_list=[
         # 需处理的 QQ 群信息 为空处理所有
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 
@@ -212,7 +212,7 @@ def code(commandData, cqCodeList, message, from_id):
 
 bot = cqapi.create_bot(
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 
@@ -250,7 +250,7 @@ def show(commandData, cqCodeList, message, from_id):
 
 bot = cqapi.create_bot(
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 
@@ -290,7 +290,7 @@ cqapi = cqHttpApi()
 # 使用新的 myCqBot
 bot = myCqBot(cqapi, host="ws://127.0.0.1:5700",
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 
@@ -308,7 +308,7 @@ def timejob(from_id):
 
 bot = cqapi.create_bot(
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 

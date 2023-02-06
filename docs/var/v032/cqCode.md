@@ -45,7 +45,7 @@ def show(commandData, _, __, from_id):
 
 bot = cqapi.create_bot(
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 
