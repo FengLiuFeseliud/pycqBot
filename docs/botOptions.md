@@ -50,7 +50,7 @@ bot.start()
 > 
 > **`admin`** bot 管理员列表 默认为空
 > 
-> **`commandSign`** 指令标志符 默认 "/"
+> **`commandSign`** 指令标志符 默认 "#"
 > 
 > **`help_text`** 帮助信息模版
 > 
