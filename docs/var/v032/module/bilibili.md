@@ -59,7 +59,7 @@ def cqmb_send_new_msg(from_id):
 
 bot = myCqBot(cqapi, "ws://127.0.0.1:5700",
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 
@@ -94,7 +94,7 @@ def on_group_msg(message, cq_code_list):
 
 bot = cqapi.create_bot(
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 

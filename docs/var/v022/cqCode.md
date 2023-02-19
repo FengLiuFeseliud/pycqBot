@@ -45,7 +45,7 @@ def show(commandData, _, __, from_id):
 
 cqBot(cqapi,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
     command={
         "at":{

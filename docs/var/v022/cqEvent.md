@@ -34,7 +34,7 @@ class myCqBot(cqBot):
 # 使用新的 myCqBot
 myCqBot(cqapi,
     group_id_list=[
-        "QQ 群号"
+        123456 # 替换为你的QQ群号
     ],
 )
 
