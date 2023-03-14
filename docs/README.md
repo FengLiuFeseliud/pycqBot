@@ -365,7 +365,7 @@ class myCqBot(cqBot):
         # 获取被撤回的消息
         message = self.cqapi.get_msg(message["message_id"])["data"]
         # 重新发送被撤回的消息
-        self.cqapi.send_group_msg(message, "有一条消息无了 群友还没看清楚呢！ %s：%s" % (
+        self.cqapi.send_group_msg(message["group_id"], "有一条消息无了 群友还没看清楚呢！ %s：%s" % (
                 message["sender"]["nickname"],
                 message["message"]
             )
