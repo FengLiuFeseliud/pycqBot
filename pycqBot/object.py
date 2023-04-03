@@ -1,74 +1,102 @@
 from __future__ import annotations
 from typing import Any, Union, TYPE_CHECKING
-from pycqBot.cqCode import reply, strToCqCode, get_cq_code
 
 if TYPE_CHECKING:
     from pycqBot import cqBot, cqHttpApi
-
-
-class Message:
-
-    def __init__(self, message_data: dict[str, Any], cqapi: cqHttpApi):
-        self._cqapi = cqapi
-        self.id = message_data["message_id"]        
-        self.sub_type = message_data["sub_type"]
-        self.type = message_data["message_type"]
-        self.text = message_data["message"]
-        self.user_id = message_data["user_id"]
-        self.time = message_data["time"]
-        self.sender = message_data["sender"]
-        self.group_id = None
-        self.temp_source = None
-        self.anonymous = None
-        self.message_data = message_data
-        self.code_str: list[str] = strToCqCode(self.text)
-        self.code: list[dict[str, Union[str, dict[str, Any]]]] = [get_cq_code(code_str) for code_str in self.code_str]
-
-        self._ck_message(message_data)
-
-    
-    def _ck_message(self, message_data: dict[str, Any]) -> None:
-        if "group_id" in message_data:
-            self.group_id = message_data["group_id"]
-        
-        if self.sub_type == "anonymous":
-            self.anonymous = message_data["anonymous"]
-            return
-        
-        if self.sub_type == "group":
-            self.temp_source = message_data["temp_source"]
-            return
-    
-    def reply(self, message: str, auto_escape: bool=False) -> None:
-        """
-        回复该消息
-        """
-        self._cqapi.send_reply(self, "%s%s" % (reply(msg_id=self.id), message), auto_escape)
-
-    def reply_not_code(self, message: str, auto_escape: bool=False) -> None:
-        """
-        回复该消息 不带 cqcode
-        """
-        self._cqapi.send_reply(self, message, auto_escape)
-    
-    def record(self, time_end: int) -> None:
-        """
-        存储该消息
-        """
-        self._cqapi.record_message(self, time_end)
-
+    from pycqBot.data.message import Group_Message, Private_Message, Message
+    from pycqBot.data.event import Message_Event, Meta_Event, Notice_Event, Request_Event
 
 class cqEvent:
+    """
+    go-cqhttp 事件
+    响应值查看: https://docs.go-cqhttp.org/event
+    """
+    
+    EVENT = [
+            # 好友私聊消息
+            "message_private_friend",
+            # 群临时会话私聊消息
+            "message_private_group",
+            # 群中自身私聊消息
+            "message_private_group_self",
+            # 私聊消息
+            "message_private_other",
+            # 群消息
+            "message_group_normal",
+            "message_group_anonymous",
+            # 自身群消息上报
+            "message_sent_group_normal",
+            # 自身消息私聊上报
+            "message_sent_private_friend",
+            # 群文件上传
+            "notice_group_upload",
+            # 群管理员变动
+            "notice_group_admin_set",
+            "notice_group_admin_unset",
+            # 群成员减少
+            "notice_group_decrease_leave",
+            "notice_group_decrease_kick",
+            "notice_group_decrease_kick_me",
+            # 群成员增加
+            "notice_group_increase_approve",
+            "notice_group_increase_invite",
+            # 群禁言
+            "notice_group_ban_ban",
+            "notice_group_ban_lift_ban",
+            # 群消息撤回
+            "notice_group_recall",
+            # 群红包运气王提示
+            "notice_notify_lucky_king",
+            # 群成员荣誉变更提示
+            "notice_notify_honor",
+            # 群成员名片更新
+            "notice_group_card",
+            # 群成员头衔变更
+            "notice_notify_title",
+            # 好友添加
+            "notice_friend_add",
+            # 好友消息撤回
+            "notice_friend_recall",
+            # 好友/群内 戳一戳
+            "notice_notify_poke",
+            # 接收到离线文件
+            "notice_offline_file",
+            # 其他客户端在线状态变更
+            "notice_client_status",
+            # 精华消息添加
+            "notice_essence_add",
+            # 精华消息移出
+            "notice_essence_delete",
+            # 加好友请求
+            "request_friend",
+            # 加群请求
+            "request_group_add",
+            # 加群邀请
+            "request_group_invite",
+            # 连接响应
+            "meta_event_lifecycle_connect",
+            # 心跳
+            "meta_event_heartbeat",
+            # 生命周期
+            "meta_event",
+        ]
 
-    def meta_event_connect(self, message):
+
+    def meta_event_lifecycle_connect(self, event: Meta_Event):
         """
         连接响应
         """
         pass
     
-    def meta_event(self, message):
+    def meta_event_heartbeat(self, event: Meta_Event):
         """
         心跳
+        """
+        pass
+
+    def meta_event(self, event: Meta_Event):
+        """
+        生命周期
         """
         pass
     
@@ -102,145 +130,145 @@ class cqEvent:
         """
         pass
 
-    def on_group_msg(self, message):
+    def on_group_msg(self, message: Group_Message):
         pass
     
-    def on_private_msg(self, message):
+    def on_private_msg(self, message: Private_Message):
         pass
 
-    def at_bot(self, message, cqCode_list, cqCode):
+    def at_bot(self, message: Group_Message, cqCode_list, cqCode):
         """
         接收到 at bot
         """
         pass
     
-    def at(self, message, cqCode_list, cqCode):
+    def at(self, message: Group_Message, cqCode_list, cqCode):
         """
         接收到 at
         """
         pass
 
-    def message_private_friend(self, message):
+    def message_private_friend(self, message: Private_Message):
         """
         好友私聊消息
         """
         pass
     
-    def message_private_group(self, message):
+    def message_private_group(self, message: Private_Message):
         """
         群临时会话私聊消息
         """
         pass
 
-    def message_sent_private_friend(self, message):
+    def message_sent_private_friend(self, message: Private_Message):
         """
         自身消息私聊上报
         """
         pass
 
-    def message_group_anonymous(self, message):
+    def message_group_anonymous(self, message: Group_Message):
         """
         群匿名消息
         """
         pass
     
-    def message_sent_group_normal(self, message):
+    def message_sent_group_normal(self, message: Group_Message):
         """
         群中自身消息上报
         """
         pass
     
-    def message_private_group_self(self, message):
+    def message_private_group_self(self, message: Group_Message):
         """
         群中自身消息
         """
         pass
     
-    def message_private_other(self, message):
+    def message_private_other(self, message: Private_Message):
         """
         私聊消息
         """
         pass
 
-    def message_group_normal(self, message):
+    def message_group_normal(self, message: Group_Message):
         """
         群消息
         """
         pass
 
-    def notice_group_upload(self, message):
+    def notice_group_upload(self, event: Notice_Event):
         """
         群文件上传
         """
         pass
     
-    def notice_group_admin_set(self, message):
+    def notice_group_admin_set(self, event: Notice_Event):
         """
         群管理员设置
         """
         pass
 
-    def notice_group_admin_unset(self, message):
+    def notice_group_admin_unset(self, event: Notice_Event):
         """
         群管理员取消
         """
         pass
     
-    def notice_group_decrease_leave(self, message):
+    def notice_group_decrease_leave(self, event: Notice_Event):
         """
         群成员减少 - 主动退群
         """
         pass
     
-    def notice_group_decrease_kick(self, message):
+    def notice_group_decrease_kick(self, event: Notice_Event):
         """
         群成员减少 - 成员被踢
         """
         pass
     
-    def notice_group_decrease_kick_me(self, message):
+    def notice_group_decrease_kick_me(self, event: Notice_Event):
         """
         群成员减少 - 登录号被踢
         """
         pass
     
-    def notice_group_increase_approve(self, message):
+    def notice_group_increase_approve(self, event: Notice_Event):
         """
         群成员增加 - 同意入群
         """
         pass
 
-    def notice_group_increase_invite(self, message):
+    def notice_group_increase_invite(self, event: Notice_Event):
         """
         群成员增加 - 邀请入群
         """
         pass
     
-    def notice_group_ban_ban(self, message):
+    def notice_group_ban_ban(self, event: Notice_Event):
         """
         群禁言
         """
         pass
 
-    def notice_group_ban_lift_ban(self, message):
+    def notice_group_ban_lift_ban(self, event: Notice_Event):
         """
         群解除禁言
         """
         pass
 
-    def notice_group_recall(self, message):
+    def notice_group_recall(self, event: Notice_Event):
         """
         群消息撤回
         """
         pass
     
-    def notice_notify_lucky_king(self, message):
+    def notice_notify_lucky_king(self, event: Notice_Event):
         """
         群红包运气王提示
         """
         pass
     
-    def notice_notify_honor(self, message):
+    def notice_notify_honor(self, event: Notice_Event):
         """
         群成员荣誉变更提示
         honor_type 荣誉类型
@@ -251,68 +279,74 @@ class cqEvent:
         """
 
         pass
+
+    def notice_notify_title(self, event: Notice_Event):
+        """
+        群成员头衔变更
+        """
+        pass
     
-    def notice_group_card(self, message):
+    def notice_group_card(self, event: Notice_Event):
         """
         群成员名片更新
         """
         pass
     
-    def notice_friend_add(self, message):
+    def notice_friend_add(self, event: Notice_Event):
         """
         好友添加
         """
         pass
 
-    def notice_friend_recall(self, message):
+    def notice_friend_recall(self, event: Notice_Event):
         """
         好友消息撤回
         """
         pass
     
-    def notice_notify_poke(self, message):
+    def notice_notify_poke(self, event: Notice_Event):
         """
         好友/群内 戳一戳
         """
         pass
     
-    def notice_offline_file(self, message):
+    def notice_offline_file(self, event: Notice_Event):
         """
         接收到离线文件
         """
         pass
 
-    def notice_client_status(self, message):
+    def notice_client_status(self, event: Notice_Event):
         """
         其他客户端在线状态变更
         """
         pass
     
-    def notice_essence_add(self, message):
+    def notice_essence_add(self, event: Notice_Event):
         """
         精华消息添加
         """
         pass
     
-    def notice_essence_delete(self, message):
+    def notice_essence_delete(self, event: Notice_Event):
         """
         精华消息移出
         """
         pass
 
-    def request_friend(self, message):
+    def request_friend(self, event: Request_Event):
         """
         加好友请求
         """
         pass
 
-    def request_group_add(self, message):
+    def request_group_add(self, event: Request_Event):
         """
         加群请求
         """
         pass
     
-    def request_group_invite(self, message):
+    def request_group_invite(self, event: Request_Event):
         """
         加群邀请
         """

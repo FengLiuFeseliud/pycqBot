@@ -374,7 +374,7 @@ def node(message: str, name: str, uin: int) -> dict[str, Union[str, dict[str, An
         }
     }
 
-def reply(text: str="", seq: str="", msg_id: str="", qq: Union[int, str]="") -> str:
+def reply(msg_id: int, text: str="", seq: str="", qq: Union[int, str]="") -> str:
     """
     回复
     """
