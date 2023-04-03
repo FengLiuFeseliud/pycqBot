@@ -42,13 +42,13 @@ bot = myCqBot(cqapi,
 bot.start()
 ```
 
-### **`def check_command(self, message: Message):`**
+**`def check_command(self, message: Message):`**
 
 指令开始检查，可以获取以下值
 
 > **`message`** 当前消息
 
-### **`def at_bot(self, message: Group_Message, cqCode_list, cqCode):`**
+**`def at_bot(self, message: Group_Message, cqCode_list, cqCode):`**
 
 接收到 at bot，可以获取以下值
 
@@ -58,7 +58,7 @@ bot.start()
 >
 > **`cqCode`** 当前 at 的 cqCode
 
-### **`def at(self, message: Group_Message, cqCode_list, cqCode):`**
+**`def at(self, message: Group_Message, cqCode_list, cqCode):`**
 
 接收到 at，可以获取以下值
 
@@ -68,13 +68,13 @@ bot.start()
 >
 > **`cqCode`** 当前 at 的 cqCode
 
-### **`def timing_start(self):`**
+**`def timing_start(self):`**
 
 启动定时任务
 
 默认输出日志并启动定时任务
 
-### **`def timing_jobs_start(self, job, run_count):`**
+**`def timing_jobs_start(self, job, run_count):`**
 
 群列表定时任务准备执行，可以获取以下值
 
@@ -86,7 +86,7 @@ bot.start()
 >
 > 在这里可以放你自己模块的需监听的函数并在模块里准备好数据
 
-### **`def timing_job_end(self, job, run_count, group_id):`**
+**`def timing_job_end(self, job, run_count, group_id):`**
 
 > [!attention]
 >
@@ -104,7 +104,7 @@ bot.start()
 >
 > 这里可以根据你需求使用
 
-### **`def timing_jobs_end(self, job, run_count):`**
+**`def timing_jobs_end(self, job, run_count):`**
 
 > [!attention]
 >
@@ -120,7 +120,7 @@ bot.start()
 >
 > 在这里可以清除你自己模块在 timing_jobs_start 准备好的数据，来准备下一轮
 
-### **`def runTimingError(self, job, run_count, err, group_id):`**
+**`def runTimingError(self, job, run_count, err, group_id):`**
 
 定时任务执行错误，可以获取以下值
 
@@ -136,7 +136,7 @@ bot.start()
 >
 > 这里和 timing_job_end 一样，并没有没有执行完成一轮定时任务
 
-### **`def notCommandError(self, message: Message):`**
+**`def notCommandError(self, message: Message):`**
 
 指令不存在时错误，可以获取以下值
 
@@ -144,7 +144,7 @@ bot.start()
 
 > **`message`** 当前消息
 
-### **`def banCommandError(self, message: Message):`**
+**`def banCommandError(self, message: Message):`**
 
 指令被禁用时错误，可以获取以下值
 
@@ -152,7 +152,7 @@ bot.start()
 
 > **`message`** 当前消息
 
-### **`def userPurviewError(self, message: Message):`**
+**`def userPurviewError(self, message: Message):`**
 
 指令用户组权限不足时错误，可以获取以下值
 
@@ -160,7 +160,7 @@ bot.start()
 
 > **`message`** 当前消息
 
-### **`def purviewError(self, message: Message):`**
+**`def purviewError(self, message: Message):`**
 
 指令权限不足时错误 (无 admin 权限)，可以获取以下值
 
@@ -168,7 +168,7 @@ bot.start()
 
 > **`message`** 当前消息
 
-### **`def runCommandError(self, message: Message, err: Exception):`**
+**`def runCommandError(self, message: Message, err: Exception):`**
 
 指令运行时错误，可以获取以下值
 

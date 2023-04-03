@@ -70,7 +70,7 @@ bot.start()
 # 也可以用 #show 显示一张图片
 ```
 
-### **`def node_list(message_list: list[str], name: str, uin: int) -> str:`**
+**`def node_list(message_list: list[str], name: str, uin: int) -> str:`**
 
 设置可以被 `cqapi.send_group_forward_msg` 发送的转发消息
 
@@ -80,7 +80,7 @@ bot.start()
 >
 > `forward_qq` 被转发的qq
 
-### **`def strToCqCodeToDict(message: str) -> list[dict[str, Union[str, dict[str, Any]]]]:`**
+**`def strToCqCodeToDict(message: str) -> list[dict[str, Union[str, dict[str, Any]]]]:`**
 
 提取字符串中的所有 cqCode 字符串转换为字典列表
 
@@ -88,7 +88,7 @@ bot.start()
 
 返回一个包括一个或多个 cqCode 字典的列表
 
-### **`def get_cq_code(code_str: str) -> dict[str, Union[str, dict[str, Any]]]:`**
+**`def get_cq_code(code_str: str) -> dict[str, Union[str, dict[str, Any]]]:`**
 
 转换 cqCode 字符串为字典
 
@@ -96,7 +96,7 @@ bot.start()
 
 返回一个 cqCode 字典
 
-### **`def strToCqCode(message: str) -> list[str]:`**
+**`def strToCqCode(message: str) -> list[str]:`**
 
 提取字符串中的所有 cqCode 字符串
 
@@ -104,7 +104,7 @@ bot.start()
 
 返回一个包括一个或多个 cqCode 字符串的列表
 
-### **`def cqJsonStrToDict(cq_json_str: str) -> dict[str, Any]:`**
+**`def cqJsonStrToDict(cq_json_str: str) -> dict[str, Any]:`**
 
 转换 cqCode 中的 json 字符串为字典
 
@@ -116,7 +116,7 @@ cqJsonStrToDict 会自动字符替换并解析 json 字符串
 >
 > cqCode 中的 json 字符串不进行字符替换无法正常解析
 
-### **`def DictTocqJsonStr(dict: dict[str, Any]) -> str:`**
+**`def DictTocqJsonStr(dict: dict[str, Any]) -> str:`**
 
 转换字典为 cqCode 中的 json 字符串
 
@@ -128,7 +128,7 @@ DictTocqJsonStr 会转换字典为 json 字符串，并自动字符替换
 >
 > json 字符串不进行字符替换无法正常解析
 
-### **`def DictToCqCode(dict: dict) -> str:`**
+**`def DictToCqCode(dict: dict) -> str:`**
 
 转换字典为 cqCode json类型
 
@@ -136,7 +136,7 @@ DictToCqCode 会转换字典为 json 字符串并生成 cqCode
 
 > **`dict`** 字典数据
 
-### **`def set_cq_code(code: dict[str, Any]) -> str:`**
+**`def set_cq_code(code: dict[str, Any]) -> str:`**
 
 转换 pycqBot 的 cqCode 字典为 cqCode 字符串
 

@@ -26,7 +26,7 @@
 
 cqHttpApi 提供了一些函数，使编写 bot 更加方便
 
-### **`def create_bot(self, host: str="ws://127.0.0.1:8080", group_id_list: list[int]=[], user_id_list: list[int]=[], options: dict[str, Any]={}) -> "cqBot":`**
+**`def create_bot(self, host: str="ws://127.0.0.1:8080", group_id_list: list[int]=[], user_id_list: list[int]=[], options: dict[str, Any]={}) -> "cqBot":`**
 
 直接创建一个 bot (就是创建一个 bot 实例返回)
 
@@ -38,7 +38,7 @@ cqHttpApi 提供了一些函数，使编写 bot 更加方便
 >
 > **`options`** options 选项
 
-### **`def record_message(self, message: Message, time_end: int) -> None:`**
+**`def record_message(self, message: Message, time_end: int) -> None:`**
 
 长效消息存储，将消息数据暂时存储在数据库，超过有效时间删除
 
@@ -50,7 +50,7 @@ cqHttpApi 提供了一些函数，使编写 bot 更加方便
 >
 > **`time_end`** 消息有效时间 单位秒
 
-### **`def record_message_get(self, user_id: int) -> Optional[list[dict[str, Any]]]:`**
+**`def record_message_get(self, user_id: int) -> Optional[list[dict[str, Any]]]:`**
 
 长效消息存储 获取，使用指定 qq 在数据库中检索暂储消息
 
@@ -66,7 +66,7 @@ cqHttpApi 提供了一些函数，使编写 bot 更加方便
 >
 > 消息数据字符串需要使用 eval 转换为字典
 
-### **`def reply(self, user_id, sleep) -> Optional[Message]:`**
+**`def reply(self, user_id, sleep) -> Optional[Message]:`**
 
 等待指定 qq 的下一条消息 (可以理解为指定 qq 回复 bot)，在指令中使用时不会堵塞其他操作
 
@@ -128,7 +128,7 @@ bot.start()
 
 ## 异步操作
 
-### **`def download_file(self, file_name: str, file_url: str) -> None:`**
+**`def download_file(self, file_name: str, file_url: str) -> None:`**
 
 异步文件下载
 
@@ -156,7 +156,7 @@ bot.start()
 >
 > 使用內置下载时将影响内部线程不要下载过大文件
 
-### **`def download_img(self, file: str) -> None:`**
+**`def download_img(self, file: str) -> None:`**
 
 异步图片下载
 
@@ -170,7 +170,7 @@ download_img 会向事件循环线程添加任务，不会影响 bot 线程
 >
 > 使用內置下载时将影响内部线程不要下载过大文件
 
-### **`def add_task(self, coroutine: Coroutine) -> None:`**
+**`def add_task(self, coroutine: Coroutine) -> None:`**
 
 向内部事件循环添加任务
 
@@ -209,7 +209,7 @@ bot.on_group_msg = on_group_msg
 bot.start()
 ```
 
-### **`def add(self, api: str, data: dict=None) -> None:`**
+**`def add(self, api: str, data: dict=None) -> None:`**
 
 向内部事件循环添加 go-cqhttp Api 任务
 
@@ -285,7 +285,7 @@ bot.start()
 # 成功启动自动下载群消息图片 并打印重写后的输出
 ```
 
-### download_end
+download_end
 
 文件下载完成，可以获取以下值
 
@@ -295,7 +295,7 @@ bot.start()
 >
 > **`code`** 状态码
 
-### downloadFileError
+downloadFileError
 
 文件下载失败，可以获取以下值
 
@@ -305,19 +305,19 @@ bot.start()
 >
 > **`code`** 状态码
 
-### downloadFileRunError
+downloadFileRunError
 
 下载时发生错误，可以获取以下值
 
 > **`err`** 捕获到的错误
 
-### apiLinkError
+apiLinkError
 
 cqapi 发生错误，可以获取以下值
 
 > **`err_json`** 请求 go-cqhttp 返回的的错误信息
 
-### apiLinkRunError
+apiLinkRunError
 
 cqapi 请求时发生错误，可以获取以下值
 

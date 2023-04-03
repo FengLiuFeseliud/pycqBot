@@ -14,11 +14,11 @@
 
 ## 函数
 
-### **`def get_event_sub_type(self) -> str:`**
+**`def get_event_sub_type(self) -> str:`**
 
 获取事件副类型
 
-### **`def get_event_name(self) -> str:`**
+**`def get_event_name(self) -> str:`**
 
 获取完整事件名
 

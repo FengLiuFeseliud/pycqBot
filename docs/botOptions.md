@@ -201,7 +201,7 @@ bot.start()
 
 ## bot 操作
 
-### **`def start(self, go_cqhttp_path: str="./", print_error: bool=True, start_go_cqhttp: bool=True)  -> None:`**
+**`def start(self, go_cqhttp_path: str="./", print_error: bool=True, start_go_cqhttp: bool=True)  -> None:`**
 
 > `go_cqhttp_path` go-cqhttp 所在目录 默认当前目录
 >

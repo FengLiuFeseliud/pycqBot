@@ -26,7 +26,7 @@
 
 [cqHttpApi](/pycqBot/cqHttpApi) 中仍旧可以使用这里的相关函数，但使用 message 类函数更加简洁
 
-### **`def reply(self, message: str, auto_escape: bool=False) -> None:`**
+**`def reply(self, message: str, auto_escape: bool=False) -> None:`**
 
 回复该消息，会自动添加回复 cqcode
 
@@ -34,7 +34,7 @@
 >
 > **`auto_escape`** 消息内容是否作为纯文本发送 (即不解析 CQ 码)，默认 False
 
-### **`def reply_not_code(self, message: str, auto_escape: bool=False) -> None:`**
+**`def reply_not_code(self, message: str, auto_escape: bool=False) -> None:`**
 
 回复该消息不带 cqcode
 
@@ -42,7 +42,7 @@
 >
 > **`auto_escape`** 消息内容是否作为纯文本发送 (即不解析 CQ 码)，默认 False
 
-### **`def record(self, time_end: int) -> None:`**
+**`def record(self, time_end: int) -> None:`**
 
 存储该消息
 
@@ -66,10 +66,10 @@
 
 ### 函数
 
-### **`def set_essence(self):`**
+**`def set_essence(self):`**
 
 设置精华消息
 
-### **`def delete_essence(self):`**
+**`def delete_essence(self):`**
 
 移出精华消息
