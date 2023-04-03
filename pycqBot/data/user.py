@@ -49,6 +49,12 @@ class User(metaclass=ABCMeta):
         """
         self._cqapi.delete_unidirectional_friend(self.id)
 
+    def waiting_reply(self, sleep: int):
+        """
+        等待回复 等待超时返回 None 用于进行判断
+        """
+        return self._cqapi.reply(self.id, sleep)
+
     @abstractmethod
     def send_message(self, message: str, auto_escape: bool = False):
         """
@@ -63,19 +69,17 @@ class User(metaclass=ABCMeta):
 
 
 class Private_User(User):
+    """私聊用户"""
     
     def __init__(self, cqapi: cqHttpApi, user_data: dict[str, Any]) -> None:
         super().__init__(cqapi, user_data)
 
-        self.group_id: Optional[int] = None
+        self.group_id: Optional[int] = user_data["group_id"] if "group_id" in user_data else None
         """
         临时群消息来源群号\n
 
             当私聊类型为群临时会话时的额外字段
         """
-
-        if "group_id" in user_data:
-            self.group_id = user_data["group_id"]
 
     def send_message(self, message: str, auto_escape: bool = False):
         """
@@ -96,6 +100,7 @@ class Private_User(User):
         self._cqapi.send_private_forward_msg(self.id, messages)
 
 class Group_User(User):
+    """群聊用户"""
     
     def __init__(self, cqapi: cqHttpApi, group_id: int, user_data: dict[str, Any]) -> None:
         super().__init__(cqapi, user_data)

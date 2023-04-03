@@ -1,6 +1,7 @@
 import logging
 from pycqBot.cqApi import cqBot, cqHttpApi
-from pycqBot.object import Plugin, Message
+from pycqBot.object import Plugin
+from pycqBot.data import *
 
 
 class manage(Plugin):
@@ -37,7 +38,7 @@ class manage(Plugin):
     
     def on_group_msg(self, message: Message):
         for text in self._ban_text:
-            if text not in message.text:
+            if text not in message.message:
                 continue
             
             self.cqapi.delete_msg(message.id)
@@ -58,12 +59,12 @@ class manage(Plugin):
                 )
             )
         message.reply(send_message)
-        message_data = self.cqapi.reply(message.user_id, self._reply_time)
+        message_data = self.cqapi.reply(message.sender.id, self._reply_time)
         if message_data is None:
             message.reply("等待 %s 选择邀请超时..." % message.sender["nickname"])
             return
         
-        request_index = int(message_data.text)
+        request_index = int(message_data.message)
         request_group_message = request_group_message_list[request_index]
         self.cqapi.set_group_add_request(request_group_message["flag"], request_group_message["sub_type"], True)
         del self._request_group_message_list[request_index]
@@ -80,18 +81,18 @@ class manage(Plugin):
         message.reply("清空 %s 条群邀请" % len(self._request_group_message_list))
         self._request_group_message_list = []
     
-    def request_group_invite(self, message):
+    def request_group_invite(self, event: Request_Event):
         if self._group_request_all:
-            self.cqapi.set_group_add_request(message["flag"], message["sub_type"], True)
-            logging.info("接受来自 qq=%s 的 group_id=%s 群邀请" % (message["user_id"],message["group_id"] ))
+            self.cqapi.set_group_add_request(event.data["flag"], event.data["sub_type"], True)
+            logging.info("接受来自 qq=%s 的 group_id=%s 群邀请" % (event.data["user_id"],event.data["group_id"] ))
             return
         
-        logging.info("保存来自 qq=%s 的 group_id=%s 群邀请" % (message["user_id"],message["group_id"] ))
-        self._request_group_message_list.append(message)
+        logging.info("保存来自 qq=%s 的 group_id=%s 群邀请" % (event.data["user_id"],event.data["group_id"] ))
+        self._request_group_message_list.append(event.data)
 
-    def notice_group_recall(self, message):
-        message = self.cqapi.get_msg(message["message_id"])["data"]
-        self.cqapi.send_group_msg(message, self._recall_text.format(
+    def notice_group_recall(self, event: Notice_Event):
+        message = self.cqapi.get_msg(event.data["message_id"])["data"]
+        self.cqapi.send_group_msg(event.data["group_id"], self._recall_text.format(
             name = message["sender"]["nickname"], 
             msg = message["message"])
         )

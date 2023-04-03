@@ -21,6 +21,7 @@ class Message:
     GROUP_MESSAGE_TYPE: str = "group"
     """群消息类型"""
 
+
 class Notice:
 
     NOTICE_POST_TYPE: str = "notice"
@@ -54,18 +55,21 @@ class Event(metaclass=ABCMeta):
     @abstractmethod
     def get_event_sub_type(self) -> str:
         """
-        事件副类型
+        获取事件副类型
         """
 
     def get_event_name(self) -> str:
         """
-        完整事件名
+        获取完整事件名
+
+        将 `post_type` `sub_type` 事件副类型 拼接为 cqEvent 事件函数名的格式
         """
         if self.sub_type is None:
             return "%s_%s" % (self.post_type, self.get_event_sub_type())
         else:
             return "%s_%s_%s" % (self.post_type, self.get_event_sub_type(), self.sub_type)
- 
+
+
 class Message_Event(Event):
     """消息事件"""
 
@@ -89,6 +93,7 @@ class Message_Event(Event):
         """是否为群消息类型"""
         return self.message_type == Message.GROUP_MESSAGE_TYPE
 
+
 class Notice_Event(Event):
     """通知事件"""
 
@@ -101,6 +106,7 @@ class Notice_Event(Event):
     def get_event_sub_type(self) -> str:
         return self.notice_type
     
+
 class Request_Event(Event):
     """请求事件"""
 
@@ -113,6 +119,7 @@ class Request_Event(Event):
     def get_event_sub_type(self) -> str:
         return self.request_type
     
+
 class Meta_Event(Event):
     """元事件"""
 
@@ -126,7 +133,7 @@ class Meta_Event(Event):
         return self.meta_event_type
     
 
-def get_event(message: str) -> Event:
+def _get_event(message: str) -> Event:
     message_data = json.loads(message)
     if message_data["post_type"] == Message.MESSAGE_POST_TYPE:
         return Message_Event(message_data)

@@ -37,7 +37,6 @@ pypy3 ./main.py
 
 **注意启动前请[下载 go-cqhttp 最新版本](https://github.com/Mrs4s/go-cqhttp/releases) 并放在当前目录**
 
-
 ```python
 from pycqBot.cqApi import cqHttpApi, cqLog
 
@@ -77,7 +76,7 @@ cqLog(logging.INFO)
 ### 设置第一个指令 echo 输出信息
 
 ```python
-from pycqBot import Message
+from pycqBot.data import Message
 
 cqapi = cqHttpApi()
 
@@ -303,6 +302,7 @@ bot.command(show, "show", {
 bot.start()
 # 成功启动后 指令 show 发送一张我的b站头像
 ```
+
 ### 转发消息
 
 主要是可以用来发涩图，一次可以发最多200张
@@ -312,7 +312,7 @@ bot.start()
 from pycqBot.cqCode import node_list, image
 
 cqapi = cqHttpApi()
-def show(commandData, message: Message):
+def show(commandData, message: Group_Message):
     # 转发消息列表 转发三张我的头像
     message_list = [
         # image("图片名", "图片url")
@@ -327,7 +327,7 @@ def show(commandData, message: Message):
         )
     ]
 
-    cqapi.send_group_forward_msg(message.group_id, node_list(message_list, 
+    message.send_forward_msg(message.group_id, node_list(message_list, 
         "test",
         "QQ号"
     ))
@@ -348,7 +348,6 @@ bot.start()
 # 成功启动后 指令 show 转发三张我的头像
 ```
 
-
 ### 重写 bot cq 事件
 
 bot 事件 名字，参数完全相同于 go-cqhttp cqCode，可以直接参考 go-cqhttp cqCode文档
@@ -357,13 +356,15 @@ bot 事件 名字，参数完全相同于 go-cqhttp cqCode，可以直接参考 
 
 ```python
 from pycqBot import cqBot
+from pycqBot.data import *
+
 # 继承 cqBot
 class myCqBot(cqBot):
 
     # 重写 notice_group_recall 事件
-    def notice_group_recall(self, message):
+    def notice_group_recall(self, event: Notice_Event):
         # 获取被撤回的消息
-        message = self.cqapi.get_msg(message["message_id"])["data"]
+        message = self.cqapi.get_msg(event.data["message_id"])["data"]
         # 重新发送被撤回的消息
         self.cqapi.send_group_msg(message["group_id"], "有一条消息无了 群友还没看清楚呢！ %s：%s" % (
                 message["sender"]["nickname"],
@@ -373,7 +374,7 @@ class myCqBot(cqBot):
 
 cqapi = cqHttpApi()
 # 使用新的 myCqBot
-bot = myCqBot(cqapi, host="ws://127.0.0.1:5700",
+bot = myCqBot(cqapi,
     group_id_list=[
         123456 # 替换为你的QQ群号
     ],
@@ -406,6 +407,7 @@ bot.timing(timejob, "timejob", {
 bot.start()
 # 成功启动后每隔5秒发送 "test bot timing job!!!"
 ```
+
 > [!tip]
 > 这只是定时任务基础用法
 >
@@ -413,134 +415,29 @@ bot.start()
 >
 > 定时任务详细使用参见文档
 
-### 多文件 / 模块化 编写
-
-v0.3.0 的更新实现了模块化的编写
-
-一个 pycqBot 需要一个入口文件， 一个 bot 配置文件，一个 bot 指令配置文件， 多个功能文件
-
-也可能有，自定义 botClass 文件，自定义 cqHttpApiClass 文件
-
-这里简单创建一个有自定义 botClass 文件的项目
-
-**如下创建目录与文件**
-
-入口 main.py
-
-bot 配置文件 bot_src/bot.py
-
-实列化出功能类 配置指令 bot_src/bot_fun.py
-
-自定义 botClass bot_src/mybot.py
-
-功能文件 bot_src/myClass.py
-
-**入口 main.py**
-
-```python
-# 从 bot 配置文件 bot_src/bot.py 引入 bot
-from bot_src.bot import bot
-
-if __name__ in "__main__":
-    # 启动 bot
-    bot.start()
-```
-
-**bot 配置文件 bot_src/bot.py**
-
-```python
-# 引入 mybot.py 在 mybot.py 中引入 bot_fun.py 所有的函数与变量 避免循环引入
-# 当然你可以直接在 bot.py 自定义 botClass
-# 如果不用自定义 botClass 直接引入 bot_fun.py 所有的函数与变量就行
-from .mybot import *
-
-# 使用自定义 botClass
-bot = myCqBot(cqapi, "ws://127.0.0.1:5700", options={
-    "admin": [
-        "bot 管理员 qq"
-    ],
-})
-
-# 绑定 pid 指令函数 并创建三个指令 "pid", "p", "id"
-bot.command(pid, ["pid", "p", "id"], {
-    "type": "all"
-})
-
-# 绑定 simg 指令函数 并创建三个指令 "simg", "user", "img"
-bot.command(simg, ["simg", "user", "img"], {
-    "type": "all"
-})
-```
-
-**实列化出功能类 配置指令 bot_src/bot_fun.py**
-
-```python
-from pycqBot.cqApi import cqHttpApi, cqLog
-from pycqBot.module import pixiv
-from pycqBot import Message
-from logging import INFO
-
-# 设置日志等级
-cqLog(INFO)
-
-cqapi = cqHttpApi()
-cqpixiv = pixiv(cqapi, "pixivBot", "qq 号", "127.0.0.1:7890", "你的 pixiv COOKIE")
-
-# 创建 pid 指令函数
-def pid(cdata, message: Message):
-    cqpixiv.search_pid(cdata[0], msg)
-
-# 创建 simg 指令函数
-def simg(cdata, message: Message):
-    cqpixiv.search_user_image_random(cdata[0], cdata[1], msg)
-```
-
-**自定义 botClass bot_src/mybot.py**
-
-```python
-# 引入 bot_fun.py 所有的函数与变量
-from .bot_fun import *
-from pycqBot.cqApi import cqBot
-
-class myCqBot(cqBot):
-
-    def on_private_msg(self, message):
-        for cq_code in message.code:
-            if cq_code["type"] == "image":
-                cqapi.download_img(cq_code["data"]["file"])
-                message.reply("保存图片 %s..." % cq_code["data"]["file"])
-
-    def at_bot(self, message, cqCode_list, cqCode):
-        message.reply("你好!")
-        return super().at_bot(message, cqCode_list, cqCode)
-```
-
-**功能文件 bot_src/myClass.py**
-
-这里只用在这里做自己的功能类，然后在 `bot_src/bot_fun.py` 中实列出来并在指令函数中使用
-
-同理可以多个 类似`from pycqBot.module import pixiv` 引入了一个功能类并使用
-
 ### 插件编写
 
-所有插件需要放在 plugin 目录
+所有插件需要放在 bot 入口文件目录下 `plugin` 目
 
-**如下创建目录与文件**
+#### **如下创建目录与文件**
 
-创建 main.py
+创建 `main.py`
 
-创建 plugin 目录
+创建 `plugin` 目录
 
-创建 plugin/myPlugin.py
+创建 `plugin/myPlugin` 目录
+
+创建 `plugin/myPlugin.py`
 
 > [!attention]
-> 插件文件名需要和类一致
+> 插件目录名 需要和 插件入口文件 插件入口类 一致
 > 插件类必须继承 **`pycqBot.object.Plugin`** 不然会不进行加载
 
 ```python
-# plugin/myPlugin.py
+# plugin/myPlugin/myPlugin.py
 from pycqBot.cqApi import cqBot, cqHttpApi
-from pycqBot.object import Plugin, Message
+from pycqBot.object import Plugin
+from pycqBot.data import *
 
 
 class myPlugin(Plugin):
@@ -548,7 +445,7 @@ class myPlugin(Plugin):
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config):
         super().__init__(bot, cqapi, plugin_config)
 
-        bot.command(self.test_plugin, "#test", {
+        bot.command(self.test_plugin, "test", {
             "type": "all"
         })
     
@@ -556,7 +453,7 @@ class myPlugin(Plugin):
         message.reply("this 插件 myPlugin")
 ```
 
-加载插件 myPlugin
+加载插件 `myPlugin`
 
 ```python
 # main.py
@@ -573,7 +470,7 @@ bot.start()
 
 ### 插件配置
 
-在目录下创建 plugin_config.yml 文件
+在 bot 入口文件目录下创建 `plugin_config.yml` 文件
 
 在插件名下配置插件
 
@@ -587,9 +484,10 @@ myPlugin:
 在插件 `plugin_config` 中获取配置
 
 ```python
-# plugin/myPlugin.py
+# plugin/myPlugin/myPlugin.py
 from pycqBot.cqApi import cqBot, cqHttpApi
-from pycqBot.object import Plugin, Message
+from pycqBot.object import Plugin
+from pycqBot.data import *
 
 
 class myPlugin(Plugin):
@@ -599,7 +497,7 @@ class myPlugin(Plugin):
         # 获取 plugin_config.yml -> myPlugin -> text
         self.text = plugin_config["text"]
 
-        bot.command(self.test_plugin, "#test", {
+        bot.command(self.test_plugin, "test", {
             "type": "all"
         })
     

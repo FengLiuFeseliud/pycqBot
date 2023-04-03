@@ -1,3 +1,5 @@
+# plugin
+
 ## 什么是插件(plugin)？为什么要使用插件？
 
 插件可以让我们在不修改 bot 的代码时为 bot 添加功能，也可以使用别人的插件在我们的 bot 上添加功能
@@ -14,6 +16,7 @@
 ```python
 # main.py
 from pycqBot.cqApi import cqHttpApi, cqLog
+
 cqLog()
 
 cqapi = cqHttpApi()
@@ -65,6 +68,8 @@ blhx:
     - 2333
     - 23333
 ```
+
+
 ## 如何编写(制作)一个插件？
 
 很简单首先在主入口文件目录创建一个名为 `plugin` 的目录，有的话就不用创建
@@ -73,9 +78,10 @@ blhx:
 
 然后在刚刚创建的文件中创建一个类，类名要与文件名一致
 
-这里我创建一个 myPlugin 文件，所以我的类名也是要和文件名一致，也就是要创建一个 myPlugin 类
+这里我创建一个 `myPlugin` 文件，所以我的类名也是要和文件名一致，也就是要创建一个 `myPlugin` 类
 
 ```python
+# plugin/myPlugin/myPlugin.py
 class myPlugin:
     pass
 ```
@@ -85,7 +91,9 @@ class myPlugin:
 如何说明它是一个插件？ 继承 `pycqBot.object.Plugin` 就行
 
 ```python
+# plugin/myPlugin/myPlugin.py
 from pycqBot.object import Plugin
+
 
 class myPlugin(Plugin):
     pass
@@ -104,7 +112,9 @@ class myPlugin(Plugin):
 ```python
 # plugin/myPlugin/myPlugin.py
 from pycqBot.cqApi import cqBot, cqHttpApi
-from pycqBot.object import Plugin, Message
+from pycqBot.object import Plugin
+from pycqBot.data import *
+
 
 class myPlugin(Plugin):
     # : xxx 是为了让你的IDE有语法提示
@@ -117,6 +127,7 @@ class myPlugin(Plugin):
 ```python
 # plugin/myPlugin/myPlugin.py
 from pycqBot.object import Plugin
+
 
 class myPlugin(Plugin):
     # : xxx 是为了让你的IDE有语法提示
@@ -133,12 +144,13 @@ class myPlugin(Plugin):
 
 众所周知 `__init__`  会在类被实例化时调用，而 pycqBot 会进行插件的实例化
 
-所以我们在 `__init__` 中用 `bot` `cqapi` 就可以像之前一样添加指令和使用 cqapi 了
+所以我们在 `__init__` 中用 `bot` `cqapi` 就可以像之前一样添加指令和使用 `cqapi` 了
 
 ```python
 # plugin/myPlugin/myPlugin.py
 from pycqBot.cqApi import cqBot, cqHttpApi
-from pycqBot.object import Plugin, Message
+from pycqBot.object import Plugin
+from pycqBot.data import *
 
 
 class myPlugin(Plugin):
@@ -176,7 +188,8 @@ class myPlugin(Plugin):
 ```python
 # plugin/myPlugin/myPlugin.py
 from pycqBot.cqApi import cqBot, cqHttpApi
-from pycqBot.object import Plugin, Message
+from pycqBot.object import Plugin
+from pycqBot.data import *
 
 
 class myPlugin(Plugin):
@@ -193,16 +206,17 @@ class myPlugin(Plugin):
     
     # notice_group_recall (消息被撤回) 事件
     # 事件的 message 和指令的 message 不一样， 事件的 message 是 json 数据
-    def notice_group_recall(self, message):
+    def notice_group_recall(self, event: Notice_Event):
         # 获取被撤回的消息
-        message = self.cqapi.get_msg(message["message_id"])["data"]
+        message = self.cqapi.get_msg(event.data["message_id"])["data"]
         # 重新发送被撤回的消息
-        self.cqapi.send_group_msg(message, "有一条消息无了 群友还没看清楚呢！ %s：%s" % (
+        self.cqapi.send_group_msg(message["group_id"], "有一条消息无了 群友还没看清楚呢！ %s：%s" % (
                 message["sender"]["nickname"],
                 message["message"]
             )
         )
 ```
+
 > [!tip]
 > 插件事件并非重写了 bot 事件，而是在 bot 运行过这个事件后把插件中同名的全部运行一次
 
@@ -210,7 +224,7 @@ class myPlugin(Plugin):
 
 这里就要用到 `plugin_config` 了
 
-比如我在 `plugin_config.yml` 中的 myPlugin 对象添加了这个 text 配置
+比如我在 `plugin_config.yml` 中的 `myPlugin` 对象添加了这个 `text` 配置
 
 ```yaml
 # plugin_config.yml
@@ -219,12 +233,13 @@ myPlugin:
     text: "这里是 plugin_config.yml 中的 myPlugin 配置 test!"
 ```
 
-怎么获取这个 `text` 呢？ 很简单，在 `plugin_config.yml` 中的 text 在插件 `plugin_config` 中就是 text
+怎么获取这个 `text` 呢？ 很简单，在 `plugin_config.yml` 中的 text 在插件 `plugin_config` 中就是 `text`
 
 ```python
 # plugin/myPlugin/myPlugin.py
 from pycqBot.cqApi import cqBot, cqHttpApi
-from pycqBot.object import Plugin, Message
+from pycqBot.object import Plugin
+from pycqBot.data import *
 
 
 class myPlugin(Plugin):
@@ -258,7 +273,8 @@ myPlugin:
 ```python
 # plugin/myPlugin/myPlugin.py
 from pycqBot.cqApi import cqBot, cqHttpApi
-from pycqBot.object import Plugin, Message
+from pycqBot.object import Plugin
+from pycqBot.data import *
 
 
 class myPlugin(Plugin):

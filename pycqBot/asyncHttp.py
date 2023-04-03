@@ -83,9 +83,11 @@ class asyncHttp:
             return None
     
     def add_task(self, coroutine: Coroutine) -> None:
+        """向内部事件循环添加任务"""
         asyncio.run_coroutine_threadsafe(coroutine, self._loop)
     
     def add(self, api: str, data: dict=None) -> None:
+        """向内部事件循环添加 go-cqhttp Api 任务"""
         if data is None:
             data = {}
 
@@ -118,6 +120,7 @@ class asyncHttp:
         await self._download_file(img_file["filename"], img_file["url"])
 
     def download_file(self, file_name: str, file_url: str) -> None:
+        """异步图片下载"""
         asyncio.run_coroutine_threadsafe(self._download_file(file_name, file_url), self._loop)
     
     def download_img(self, file: str) -> None:

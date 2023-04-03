@@ -1,3 +1,5 @@
+# cqHttpApi
+
 有绝大部分的 go-cqhttp API 同名函数，大部分参数一致
 
 因此你可以直接参考 go-cqhttp API 文档来使用 cqHttpApi
@@ -5,7 +7,7 @@
 > [!attention]
 >
 > 目前不支持频道 API ~~我也不用这个啊频道有什么用？~~
-
+>
 > [!note]
 >
 > go-cqhttp API 文档地址
@@ -14,21 +16,29 @@
 
 ## 选项
 
-> **`host`** go-cqhttp Http 服务地址 默认http://127.0.0.1:8000
-> 
+> **`host`** go-cqhttp Http 服务地址 默认 <http://127.0.0.1:5700>
+>
 > **`download_path`** 文件下载目录 默认当前 bot 运行目录下的 download
-> 
+>
 > **`chunk_size`** 文件下载缓存 默认1024kb
 
-## 內置函数
+## 函数
 
 cqHttpApi 提供了一些函数，使编写 bot 更加方便
 
-### create_bot
+### **`def create_bot(self, host: str="ws://127.0.0.1:8080", group_id_list: list[int]=[], user_id_list: list[int]=[], options: dict[str, Any]={}) -> "cqBot":`**
 
 直接创建一个 bot (就是创建一个 bot 实例返回)
 
-### record_message
+> **`host`** bot 正向 websocket 地址
+>
+> **`group_id_list`** 需处理群列表 为空全部处理
+>
+> **`user_id_list`** 需处理私信列表 为空全部处理
+>
+> **`options`** options 选项
+
+### **`def record_message(self, message: Message, time_end: int) -> None:`**
 
 长效消息存储，将消息数据暂时存储在数据库，超过有效时间删除
 
@@ -37,31 +47,33 @@ cqHttpApi 提供了一些函数，使编写 bot 更加方便
 默认每60秒检查一次消息有效时间，可通过 bot options 中的 `messageSqlClearTime` 设置
 
 > **`message_data`** 消息数据字典 (bot 返回的消息)
-> 
+>
 > **`time_end`** 消息有效时间 单位秒
 
-### record_message_get
+### **`def record_message_get(self, user_id: int) -> Optional[list[dict[str, Any]]]:`**
 
 长效消息存储 获取，使用指定 qq 在数据库中检索暂储消息
+
+> **`user_id`** 检索 qq
 
 返回一个数组，数组元素为元组，没有数据返回空数组
 
 元组中的数据按以下排列
 
 > (自增id, qq, 存储时间, 存储有效时间, 消息数据字符串)
-
+>
 > [!attention]
 >
 > 消息数据字符串需要使用 eval 转换为字典
 
-### reply
+### **`def reply(self, user_id, sleep) -> Optional[Message]:`**
 
 等待指定 qq 的下一条消息 (可以理解为指定 qq 回复 bot)，在指令中使用时不会堵塞其他操作
 
 等待超时返回 None 用于进行判断
 
 > **`user_id`** 指定等待 qq
-> 
+>
 > **`sleep`** 等待时间 单位秒
 
 **消息存储与 reply 一起使用的例子**
@@ -114,10 +126,11 @@ bot.command(set, "set")
 bot.start()
 ```
 
+## 异步操作
 
-## 內置异步操作
+### **`def download_file(self, file_name: str, file_url: str) -> None:`**
 
-### 异步图片下载 download_img
+异步文件下载
 
 download_img 会向事件循环线程添加任务，不会影响 bot 线程
 
@@ -138,13 +151,16 @@ bot = cqapi.create_bot()
 bot.on_group_msg = on_group_msg
 bot.start()
 ```
+
 > [!attention]
 >
 > 使用內置下载时将影响内部线程不要下载过大文件
 
-### 异步文件下载 download_file
+### **`def download_img(self, file: str) -> None:`**
 
-download_file 会向事件循环线程添加任务，不会影响 bot 线程
+异步图片下载
+
+download_img 会向事件循环线程添加任务，不会影响 bot 线程
 
 > **`file_name`** 文件名
 >
@@ -154,8 +170,9 @@ download_file 会向事件循环线程添加任务，不会影响 bot 线程
 >
 > 使用內置下载时将影响内部线程不要下载过大文件
 
+### **`def add_task(self, coroutine: Coroutine) -> None:`**
 
-### 向内部事件循环添加任务 add_task
+向内部事件循环添加任务
 
 > [!attention]
 >
@@ -192,7 +209,9 @@ bot.on_group_msg = on_group_msg
 bot.start()
 ```
 
-### 向内部事件循环添加 go-cqhttp Api 任务 add
+### **`def add(self, api: str, data: dict=None) -> None:`**
+
+向内部事件循环添加 go-cqhttp Api 任务
 
 > [!attention]
 >
@@ -200,34 +219,32 @@ bot.start()
 >
 > add 调用 Api 不会有返回值！
 
-add 会向事件循环线程添加调用 go-cqhttp Api 任务，不会影响 bot 线程 
+add 会向事件循环线程添加调用 go-cqhttp Api 任务，不会影响 bot 线程
 
 cqHttpApi 内部大量使用 add 使调用无返回值 Api 时不会影响 bot 线程
 
 ```python
-"""
-发送私聊消息
-"""
 
 cqapi = cqHttpApi()
 
-post_data = {
+"""
+发送私聊消息
+"""
+cqapi.add("/send_msg", {
     "user_id": user_id,
     "group_id": group_id,
     "message": message,
     "auto_escape": auto_escape
-}
-cqapi.add("/send_msg", post_data)
+})
 
 """
 发送群消息
 """
-post_data = {
+cqapi.add("/send_msg", post_data = {
     "group_id":group_id,
     "message":message,
     "auto_escape":auto_escape
-}
-cqapi.add("/send_msg", post_data)
+})
 
 # 相当于
 

@@ -1,7 +1,8 @@
 import json
 import logging
-from pycqBot.object import Plugin, Message
+from pycqBot.object import Plugin
 from pycqBot.cqApi import cqBot, cqHttpApi
+from pycqBot.data import *
 
 class weather(Plugin):
     """

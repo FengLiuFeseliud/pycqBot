@@ -69,7 +69,7 @@ database:
 servers:
     - http:
         host: 127.0.0.1
-        port: 8000
+        port: 5700
         timeout: 5
         middlewares:
             <<: *default
@@ -77,7 +77,7 @@ servers:
 
     - ws:
         host: 127.0.0.1
-        port: 5700
+        port: 8080
         middlewares:
             <<: *default
 """

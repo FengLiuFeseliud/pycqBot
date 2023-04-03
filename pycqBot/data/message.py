@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Union, TYPE_CHECKING
+from typing import Any, Union, TYPE_CHECKING, Optional
 from pycqBot.cqCode import reply, strToCqCode, get_cq_code
 from pycqBot.data.user import Private_User, Group_User, User
 
@@ -76,7 +76,9 @@ class Message(metaclass=ABCMeta):
         """
         self._cqapi.record_message(self, time_end)
 
+
 class Private_Message(Message):
+    """私聊消息"""
 
     def __init__(self, cqapi: cqHttpApi, event: Message_Event, message_data: dict[str, Any]) -> None:
         super().__init__(cqapi, event, message_data)
@@ -87,16 +89,17 @@ class Private_Message(Message):
         self.target_id: int = message_data["target_id"]
         """接收者 QQ 号"""
 
-        self.temp_source: int = message_data["temp_source"]
+        self.temp_source: Optional[int] = message_data["temp_source"] if "temp_source" in message_data else None
         """临时会话来源"""
 
     def reply(self, message: str, auto_escape: bool = False) -> None:
-        self._cqapi.send_private_msg(self.target_id, "%s%s" % (reply(msg_id=self.id), message), self.temp_source, auto_escape)
+        self._cqapi.send_private_msg(self.sender.id, "%s%s" % (reply(msg_id=self.id), message), self.temp_source, auto_escape)
 
     def reply_not_code(self, message: str, auto_escape: bool=False) -> None:
-        self._cqapi.send_private_msg(self.target_id, message, self.temp_source, auto_escape)
+        self._cqapi.send_private_msg(self.sender.id, message, self.temp_source, auto_escape)
 
 class Group_Message(Message):
+    """群消息"""
 
     def __init__(self, cqapi: cqHttpApi, event: Message_Event, message_data: dict[str, Any]) -> None:
         super().__init__(cqapi, event, message_data)

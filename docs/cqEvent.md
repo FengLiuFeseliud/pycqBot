@@ -1,3 +1,5 @@
+# cqEvent
+
 支持所有 go-cqhttp API Event，同名与 pycqBot 事件函数
 
 因此你可以直接参考 go-cqhttp Event 文档来使用 pycqBot 中的事件
@@ -19,20 +21,19 @@
 使用很简单，直接重写事件函数，以下是一个简单的回复 at
 
 ```python
-cqapi = cqHttpApi()
-
 # 继承 cqBot
 class myCqBot(cqBot):
 
     # 重写 at_bot 事件
-    def at_bot(self, message, cqCode):
+    def at_bot(self, message, _, __):
         # 回复 at
         message.reply("你好!")
         # 调用原 at_bot 事件的日志写入
-        return super().at_bot(message, cqCode)
+        return super().at_bot(message, _, __)
 
+cqapi = cqHttpApi()
 # 使用新的 myCqBot
-bot = myCqBot(cqapi, host="ws://127.0.0.1:5700",
+bot = myCqBot(cqapi,
     group_id_list=[
         123456 # 替换为你的QQ群号
     ],
@@ -41,27 +42,13 @@ bot = myCqBot(cqapi, host="ws://127.0.0.1:5700",
 bot.start()
 ```
 
-### meta_event_connect
-
-连接响应
-
-默认输出日志并执行 bot _meta_event_connect
-
-_meta_event_connect 会根据 auto_timing_start 启动定时任务并保存 bot qq号
-
-可以获取以下值
-
-> **`message`** websocket 连接响应消息 (由 go-cqhttp 返回 有当前 bot 信息)
-
-### check_command
+### **`def check_command(self, message: Message):`**
 
 指令开始检查，可以获取以下值
 
 > **`message`** 当前消息
->
-> **`from_id`** 来源 id qq/群号
 
-### at_bot
+### **`def at_bot(self, message: Group_Message, cqCode_list, cqCode):`**
 
 接收到 at bot，可以获取以下值
 
@@ -71,8 +58,7 @@ _meta_event_connect 会根据 auto_timing_start 启动定时任务并保存 bot 
 >
 > **`cqCode`** 当前 at 的 cqCode
 
-
-### at
+### **`def at(self, message: Group_Message, cqCode_list, cqCode):`**
 
 接收到 at，可以获取以下值
 
@@ -82,13 +68,13 @@ _meta_event_connect 会根据 auto_timing_start 启动定时任务并保存 bot 
 >
 > **`cqCode`** 当前 at 的 cqCode
 
-### timing_start
+### **`def timing_start(self):`**
 
 启动定时任务
 
 默认输出日志并启动定时任务
 
-### timing_jobs_start
+### **`def timing_jobs_start(self, job, run_count):`**
 
 群列表定时任务准备执行，可以获取以下值
 
@@ -100,7 +86,7 @@ _meta_event_connect 会根据 auto_timing_start 启动定时任务并保存 bot 
 >
 > 在这里可以放你自己模块的需监听的函数并在模块里准备好数据
 
-### timing_job_end 
+### **`def timing_job_end(self, job, run_count, group_id):`**
 
 > [!attention]
 >
@@ -118,7 +104,7 @@ _meta_event_connect 会根据 auto_timing_start 启动定时任务并保存 bot 
 >
 > 这里可以根据你需求使用
 
-### timing_jobs_end
+### **`def timing_jobs_end(self, job, run_count):`**
 
 > [!attention]
 >
@@ -134,7 +120,7 @@ _meta_event_connect 会根据 auto_timing_start 启动定时任务并保存 bot 
 >
 > 在这里可以清除你自己模块在 timing_jobs_start 准备好的数据，来准备下一轮
 
-### runTimingError
+### **`def runTimingError(self, job, run_count, err, group_id):`**
 
 定时任务执行错误，可以获取以下值
 
@@ -150,47 +136,39 @@ _meta_event_connect 会根据 auto_timing_start 启动定时任务并保存 bot 
 >
 > 这里和 timing_job_end 一样，并没有没有执行完成一轮定时任务
 
-### notCommandError
+### **`def notCommandError(self, message: Message):`**
 
 指令不存在时错误，可以获取以下值
 
 默认输出日志并回复错误消息
 
 > **`message`** 当前消息
->
-> **`from_id`** 来源 id qq/群号
 
-### banCommandError
+### **`def banCommandError(self, message: Message):`**
 
 指令被禁用时错误，可以获取以下值
 
 默认输出日志并回复错误消息
 
 > **`message`** 当前消息
->
-> **`from_id`** 来源 id qq/群号
 
-### userPurviewError
+### **`def userPurviewError(self, message: Message):`**
 
 指令用户组权限不足时错误，可以获取以下值
 
 默认输出日志并回复错误消息
 
 > **`message`** 当前消息
->
-> **`from_id`** 来源 id qq/群号
 
-### purviewError
+### **`def purviewError(self, message: Message):`**
 
 指令权限不足时错误 (无 admin 权限)，可以获取以下值
 
 默认输出日志并回复错误消息
 
 > **`message`** 当前消息
->
-> **`from_id`** 来源 id qq/群号
 
-### runCommandError
+### **`def runCommandError(self, message: Message, err: Exception):`**
 
 指令运行时错误，可以获取以下值
 
@@ -199,6 +177,3 @@ _meta_event_connect 会根据 auto_timing_start 启动定时任务并保存 bot 
 > **`message`** 当前消息
 >
 > **`err`** 捕获到的错误
->
-> **`from_id`** 来源 id qq/群号
-

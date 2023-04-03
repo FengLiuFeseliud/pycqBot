@@ -46,8 +46,6 @@ bot.start()
 
 ## options 选项
 
-> **`debug`** websocket 会话 debug 默认False
-> 
 > **`admin`** bot 管理员列表 默认为空
 > 
 > **`commandSign`** 指令标志符 默认 "#"
@@ -59,7 +57,6 @@ bot.start()
 > **`messageSqlPath`** 长效消息存储 数据库目录
 > 
 > **`messageSqlClearTime`** 长效消息存储 清理间隔
->
 
 **help_text 的使用**
 
@@ -204,7 +201,7 @@ bot.start()
 
 ## bot 操作
 
-### bot.start
+### **`def start(self, go_cqhttp_path: str="./", print_error: bool=True, start_go_cqhttp: bool=True)  -> None:`**
 
 > `go_cqhttp_path` go-cqhttp 所在目录 默认当前目录
 >

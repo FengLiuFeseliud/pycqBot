@@ -14,8 +14,8 @@ from websockets.exceptions import ConnectionClosedError
 import websockets
 
 import pycqBot
-from pycqBot.data.event import Event, Message_Event, Meta_Event, get_event
-from pycqBot.data.message import Group_Message, Message, Private_Message
+from pycqBot.data import *
+from pycqBot.data.event import _get_event
 from pycqBot.object import cqEvent
 from pycqBot.asyncHttp import asyncHttp
 import yaml
@@ -211,24 +211,24 @@ class cqHttpApi(asyncHttp):
             "messages": message,
         })
 
-    def send_reply(self, from_message: Message, message: str, auto_escape: bool=False) -> None: 
+    def send_reply(self, from_message: Union[Private_Message, Group_Message], message: str, auto_escape: bool=False) -> None: 
         """
         发送回复
         """
-        if from_message.event.is_group():
+        if type(from_message) is Group_Message:
             self.send_group_msg(from_message.group_id, message, auto_escape)
         
-        if from_message.event.is_private():
+        if type(from_message) is Private_Message:
             self.send_private_msg(from_message.sender.id, message, auto_escape)
 
-    def send_forward_msg(self, from_message: Message, message: str) -> None: 
+    def send_forward_msg(self, from_message: Union[Private_Message, Group_Message], message: str) -> None: 
         """
         发送合并转发
         """
-        if from_message.event.is_group():
+        if type(from_message) is Group_Message:
             self.send_group_forward_msg(from_message.group_id, message)
         
-        if from_message.event.is_private():
+        if type(from_message) is Private_Message:
             self.send_private_forward_msg(from_message.sender.id, message)
     
     def get_forward(self, forward_id: int) -> Optional[dict[Any, Any]]:
@@ -677,16 +677,16 @@ class cqBot(cqEvent):
 
         self.cqapi = cqapi
         self.__plugin_list: list[object] = []
+        # 指令列表
+        self.__commandList: dict[str, dict] = {}
+        # 定时任务
+        self.__timingList: dict[str, dict] = {}
         # bot qq
         self.__bot_qq: int= 0
         # 需处理群
-        self.__group_id_list: list[int] = group_id_list
+        self.group_id_list: list[int] = group_id_list
         # 需处理私信
-        self.__user_id_list: list[int] = user_id_list
-        # 指令列表
-        self._commandList: dict[str, dict] = {}
-        # 定时任务
-        self._timingList: dict[str, dict] = {}
+        self.user_id_list: list[int] = user_id_list
         # 管理员列表
         self.admin: list[int] = []
         # 指令标志符
@@ -705,9 +705,7 @@ class cqBot(cqEvent):
 
         # 以下参数只有在启用时设置有效
         # websocket 会话 地址
-        self._host = host
-        # websocket 会话 debug
-        self._debug = False
+        self.__host = host
         self._websocket_start_in = True
 
         self.reconnection_sleep = 10
@@ -829,19 +827,22 @@ class cqBot(cqEvent):
                 elif not print_error:
                     self.cqhttp_log_print(shell_msg)
         
-        if not start_go_cqhttp:
+        try:
+            if not start_go_cqhttp:
+                self._websocket_start()
+                return
+
+            thread = Thread(target=cqhttp_start, name="cqhttp_shell")
+            thread.setDaemon(True)
+            thread.start()
+
+            while self._websocket_start_in:
+                time.sleep(0.5)
+                pass
+
             self._websocket_start()
-            return
-
-        thread = Thread(target=cqhttp_start, name="cqhttp_shell")
-        thread.setDaemon(True)
-        thread.start()
-        
-        while self._websocket_start_in:
-            time.sleep(0.5)
-            pass
-
-        self._websocket_start()
+        except KeyboardInterrupt:
+            print("\n")
     
     def _websocket_start(self) -> None:
         """
@@ -853,7 +854,7 @@ class cqBot(cqEvent):
                 try:
                     logging.info("正在连接 go-cqhttp websocket 服务")
                     # 只接收 event
-                    async with websockets.connect(self._host) as websocket:
+                    async with websockets.connect(self.__host) as websocket:
                         self.reconnection = old_reconnection
                         while 1:
                             try:
@@ -874,7 +875,10 @@ class cqBot(cqEvent):
             
             logging.fatal(f"无法连接 websocket 服务 host: {self._host}")
         
-        asyncio.run(main_logic())
+        try:
+            asyncio.run(main_logic())
+        except KeyboardInterrupt:
+            print("\n")
 
     @staticmethod
     def _import_plugin_config() -> dict:
@@ -883,7 +887,7 @@ class cqBot(cqEvent):
                 return yaml.safe_load(file.read())
         else:
             with open("./plugin_config.yml", "w", encoding="utf8") as file:
-                file.write(r"{}")
+                file.write("# 插件配置")
 
         return {}
     
@@ -952,7 +956,7 @@ class cqBot(cqEvent):
         除非已经了解如何工作
         """
         try:
-            event = get_event(message_data)
+            event = _get_event(message_data)
         except TypeError as err:
             logging.warning(err)
             return "", None
@@ -964,10 +968,10 @@ class cqBot(cqEvent):
             if type(event) is Message_Event:
                 message = event.get_message(self.cqapi)
 
-                eval("self.%s(message)" % event_name)
+                exec("self.%s(message)" % event_name)
                 self._plugin_event_run(event_name, message)
             else:
-                eval("self.%s(event)" % event_name)
+                exec("self.%s(event)" % event_name)
                 self._plugin_event_run(event_name, event)
 
             return event_name, event
@@ -1030,8 +1034,8 @@ class cqBot(cqEvent):
             command_name = [command_name]
 
         for name in command_name:
-            self._commandList[name] = options
-            self._commandList[name]["function"] = function
+            self.__commandList[name] = options
+            self.__commandList[name]["function"] = function
 
         return self
 
@@ -1071,9 +1075,9 @@ class cqBot(cqEvent):
             return self
 
         options["function"] = function
-        self._timingList[timing_name] = options
+        self.__timingList[timing_name] = options
 
-        thread = Thread(target=self._timing_job, args=(self._timingList[timing_name],), name=timing_name)
+        thread = Thread(target=self._timing_job, args=(self.__timingList[timing_name],), name=timing_name)
         thread.setDaemon(True)
         thread.start()
 
@@ -1134,9 +1138,9 @@ class cqBot(cqEvent):
     def user_log_srt(self, message: Union[Private_Message, Group_Message]):
         user_id = message.sender.id
 
-        if message.event.is_private():
+        if type(message) is Private_Message:
             user_name = message.sender.nickname
-        elif message.event.is_group():
+        elif type(message) is Group_Message:
             if message.anonymous == None:
                 if message.sender.card.strip() != '':
                     user_name = message.sender.card
@@ -1146,7 +1150,7 @@ class cqBot(cqEvent):
                 user_name = "匿名用户 - %s flag: %s" % (message.anonymous["name"],
                     message.anonymous["flag"])
 
-        if message.event.is_group():
+        if type(message) is Group_Message:
             return "%s (qq=%s,群号=%s)" % (user_name, user_id, message.group_id)
 
         return "%s (qq=%s)" % (user_name, user_id)
@@ -1177,22 +1181,22 @@ class cqBot(cqEvent):
         if commandSign != self.commandSign:
             return False
         
-        if command not in self._commandList:
+        if command not in self.__commandList:
             self.notCommandError(message)
             return False
 
-        if self._commandList[command]["type"] != message.event.message_type and self._commandList[command]["type"] != "all":
+        if self.__commandList[command]["type"] != message.event.message_type and self.__commandList[command]["type"] != "all":
             return False
         
         self.check_command(message)
         
-        if message.event.is_group():
+        if message.event is Group_Message:
 
-            if message.group_id in self._commandList[command]["ban"]:
+            if message.group_id in self.__commandList[command]["ban"]:
                 self.banCommandError(message)
                 return False
             
-            user_list = self._commandList[command]["user"]
+            user_list = self.__commandList[command]["user"]
             if user_list[0] != "all":
 
                 if message.anonymous is not None and "anonymous" not in user_list:
@@ -1203,7 +1207,7 @@ class cqBot(cqEvent):
                     self.userPurviewError(message)
                     return False
 
-        if self._commandList[command]["admin"] and message.sender.id not in self.admin:
+        if self.__commandList[command]["admin"] and message.sender.id not in self.admin:
             self.purviewError(message)
             return False
 
@@ -1220,7 +1224,7 @@ class cqBot(cqEvent):
                     return
 
                 commandSign, command, commandData = commandIn
-                self._commandList[command]["function"](commandData, message)
+                self.__commandList[command]["function"](commandData, message)
 
             except Exception as err:
                 self.runCommandError(message, err)
@@ -1257,7 +1261,7 @@ class cqBot(cqEvent):
         """
         通用私聊消息处理
         """
-        if (message.sender.id not in self.__user_id_list) and self.__user_id_list != []:
+        if (message.sender.id not in self.user_id_list) and self.user_id_list != []:
             return None
 
         message = self._message_run(message)
@@ -1269,7 +1273,7 @@ class cqBot(cqEvent):
         """
         通用群消息处理
         """
-        if message.group_id not in self.__group_id_list and self.__group_id_list != []:
+        if message.group_id not in self.group_id_list and self.group_id_list != []:
             return None
 
         message = self._message_run(message)
@@ -1370,31 +1374,31 @@ class cqBot(cqEvent):
         """
         self._bot_message_log("%s 权限不足... 指令 %s" % (self.user_log_srt(message), message.message), message)
     
-    def runCommandError(self, message: Message, err):
+    def runCommandError(self, message: Message, err: Exception):
         """
         指令运行时错误
         """
         self._bot_message_log("指令 %s 运行时错误... Error: %s" % (message.message, err), message)
         logging.exception(err)
     
-    def notice_group_decrease_kick_me(self, message):
+    def notice_group_decrease_kick_me(self, event: Notice_Event):
         """
         群成员减少 - 登录号被踢
         """
-        if message["group_id"] in self.__group_id_list:
-            self.__group_id_list.remove(message["group_id"])
+        if event.data["group_id"] in self.group_id_list:
+            self.group_id_list.remove(event.data["group_id"])
 
         async def _notice_group_decrease_kick_me(message):
-            post_data = {
-                "user_id": message["user_id"]
-            }
-            user_data = await self.cqapi._asynclink("/get_stranger_info", post_data)
+            user_data = await self.cqapi._asynclink("/get_stranger_info", {
+                "user_id": event.data["operator_id"]
+            })
+
             if user_data is None:
                 return
             
-            logging.info("bot 被 %s (qq=%s) T出群 685735591" % (user_data["data"]["nickname"], user_data["data"]["user_id"]))
+            logging.info("bot 被 %s (qq=%s) T出群 %s" % (user_data["data"]["nickname"], user_data["data"]["user_id"], event.data["group_id"]))
 
-        self.cqapi.add_task(_notice_group_decrease_kick_me(message))
+        self.cqapi.add_task(_notice_group_decrease_kick_me(event))
 
 
 class cqLog:

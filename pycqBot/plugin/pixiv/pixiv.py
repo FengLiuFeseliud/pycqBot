@@ -3,7 +3,8 @@ import random
 from lxml import etree
 from pycqBot.cqApi import cqBot, cqHttpApi
 from pycqBot.cqCode import image, node_list
-from pycqBot.object import Plugin, Message
+from pycqBot.object import Plugin
+from pycqBot.data import *
 
 
 class pixiv(Plugin):
@@ -97,7 +98,7 @@ class pixiv(Plugin):
         if send_type == 3:
             return self.search_pid_message(image_data, img_code)
     
-    async def _send_image_list(self, image_list, message, send_type):
+    async def _send_image_list(self, image_list, message: Group_Message, send_type):
         """
         转发图片表
         """
