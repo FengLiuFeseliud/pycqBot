@@ -131,13 +131,13 @@ class Group_User(User):
         """
         发送群聊消息
         """
-        self._cqapi.send_group_msg(self.id, message, auto_escape)
+        self._cqapi.send_group_msg(self.group_id, message, auto_escape)
 
     def send_forward_msg(self, messages: str):
         """
         发送群聊合并转发
         """
-        self._cqapi.send_group_forward_msg(self.id, messages)
+        self._cqapi.send_group_forward_msg(self.group_id, messages)
 
     def poke(self):
         """
