@@ -40,7 +40,7 @@ class Message(metaclass=ABCMeta):
         self.font: int = message_data["font"]
         """字体"""
 
-        self.sender: User = None
+        self.sender: Optional[Union[Private_User, Group_User]] = None
         """发送人"""
 
         self.message: str = message_data["message"]
@@ -49,7 +49,7 @@ class Message(metaclass=ABCMeta):
         self.code_str: list[str] = strToCqCode(self.message)
         """消息 cqCode 字符串"""
 
-        self.code: list[dict[str, Union[str, dict[str, Any]]]] = [get_cq_code(code_str) for code_str in self.code_str]
+        self.code: list[dict[str, Any]] = [get_cq_code(code_str) for code_str in self.code_str]
         """消息 cqCode 字典"""
 
     @abstractmethod

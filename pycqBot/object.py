@@ -178,7 +178,7 @@ class cqEvent:
         """
         pass
     
-    def message_private_group_self(self, message: Group_Message):
+    def message_private_group_self(self, message: Private_Message):
         """
         群中自身消息
         """

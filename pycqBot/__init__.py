@@ -2,7 +2,7 @@ from pycqBot.cqApi import cqBot, cqHttpApi, cqLog
 from pycqBot.object import Plugin, cqEvent
 
 
-__VERSIONS__ = "v0.5.0"
+__VERSIONS__ = "v0.5.0.1"
 
 
 TIT = """

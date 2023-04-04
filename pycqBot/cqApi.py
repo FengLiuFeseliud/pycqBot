@@ -211,7 +211,7 @@ class cqHttpApi(asyncHttp):
             "messages": message,
         })
 
-    def send_reply(self, from_message: Union[Private_Message, Group_Message], message: str, auto_escape: bool=False) -> None: 
+    def send_reply(self, from_message: Union[Private_Message, Group_Message, Message], message: str, auto_escape: bool=False) -> None: 
         """
         发送回复
         """
@@ -625,21 +625,35 @@ class cqHttpApi(asyncHttp):
         获取 go-cqhttp 状态
         """
         return self._link("/get_status")
-    
-    def upload_group_file(self, group_id, file, name, folder=None):
-        """
-        上传群文件
-        """
-        post_data = {
-            "group_id": group_id,
-            "file": "file://%s" % file,
-            "name": name
-        }
 
-        if folder is not None:
-            post_data["folder"] = folder
+    def _handle_quick_operation(self, context, operation: dict[str, Any]):
+        """
+        对事件执行快速操作 ( 隐藏 API )
+        """
+        self.add("/.handle_quick_operation", {
+            "context": context,
+            "operation": operation
+        })
 
-        self.add("/upload_group_file", post_data)
+    def check_url_safely(self, url: str):
+        """
+        检查链接安全性
+        """
+        return self._link("/check_url_safely", {
+            "url": url
+        })
+
+    def get_version_info(self):
+        """
+        获取 go-cqhttp 版本信息
+        """
+        return self._link("/get_version_info")
+
+    def reload_event_filter(self):
+        """
+        重载 go-cqhttp 事件过滤器
+        """
+        self.add("/reload_event_filter")
     
     def recordMessageInvalid(self, record_message_data, sql_link):
         """
@@ -1024,7 +1038,7 @@ class cqBot(cqEvent):
 
         return options
         
-    def command(self, function: Callable[[list[str], Message], None], command_name: Union[str, list[str]], options: dict[str, Any]=None) -> "cqBot":
+    def command(self, function: Callable[[list[str], Message], None], command_name: Union[str, list[str]], options: Optional[dict[str, Any]] = None) -> "cqBot":
         if options is None:
             options = {}
             
@@ -1044,7 +1058,7 @@ class cqBot(cqEvent):
         while True:
             self.timing_jobs_start(job, run_count)
             self._plugin_event_run("timing_jobs_start", job, run_count)
-            for group_id in self.__group_id_list:
+            for group_id in self.group_id_list:
                 if group_id in job["ban"]:
                     return
                 
@@ -1062,7 +1076,7 @@ class cqBot(cqEvent):
             self._plugin_event_run("timing_jobs_end", job, run_count)
             time.sleep(job["timeSleep"])
     
-    def timing(self, function: Callable[[int], None], timing_name: str, options: dict[str, Any]=None) -> "cqBot":
+    def timing(self, function: Callable[[int], None], timing_name: str, options: Optional[dict[str, Any]] = None) -> "cqBot":
         if options is None:
             options = {}
 
@@ -1135,7 +1149,7 @@ class cqBot(cqEvent):
         logging.error("定时任务 %s 在群 %s 执行错误... 共执行 %s 次 Error: %s" % (job["name"], group_id, run_count, err))
         logging.exception(err)
 
-    def user_log_srt(self, message: Union[Private_Message, Group_Message]):
+    def user_log_srt(self, message: Message):
         user_id = message.sender.id
 
         if type(message) is Private_Message:
@@ -1190,7 +1204,7 @@ class cqBot(cqEvent):
         
         self.check_command(message)
         
-        if message.event is Group_Message:
+        if type(message) is Group_Message:
 
             if message.group_id in self.__commandList[command]["ban"]:
                 self.banCommandError(message)
@@ -1249,7 +1263,7 @@ class cqBot(cqEvent):
         
         return message
     
-    def _message_run(self, message: Message) -> Message:
+    def _message_run(self, message: Union[Message, Private_Message, Group_Message]) -> Union[Message, Private_Message, Group_Message]:
         message = self._message(message)
         self._plugin_event_run(f"on_{message.event.message_type}_msg", message)
         self._run_command(message)
@@ -1280,14 +1294,16 @@ class cqBot(cqEvent):
         self.on_group_msg(message)
 
         for cqCode in message.code:
-            if cqCode["type"] == "at":
-                if cqCode["data"]["qq"] == str(self.__bot_qq):
-                    self.at_bot(message, message.code, cqCode)
-                    self._plugin_event_run("at_bot", message, message.code, cqCode)
-                    continue
-                
-                self.at(message, message.code, cqCode)
-                self._plugin_event_run("at", message, message.code, cqCode)
+            if cqCode["type"] != "at":
+                continue
+
+            if cqCode["data"]["qq"] == str(self.__bot_qq):
+                self.at_bot(message, message.code, cqCode)
+                self._plugin_event_run("at_bot", message, message.code, cqCode)
+                continue
+            
+            self.at(message, message.code, cqCode)
+            self._plugin_event_run("at", message, message.code, cqCode)
 
         return message
     
@@ -1328,7 +1344,7 @@ class cqBot(cqEvent):
     def message_sent_group_normal(self, message: Group_Message):
         self._message_group(message)
     
-    def message_private_group_self(self, message: Group_Message):
+    def message_private_group_self(self, message: Private_Message):
         """
         群中自身私聊消息
         """

@@ -129,16 +129,15 @@ class Group_User(User):
 
     def send_message(self, message: str, auto_escape: bool = False):
         """
-        发送私聊消息
+        发送群聊消息
         """
-        self._cqapi.send_private_msg(self.id, message, auto_escape)
+        self._cqapi.send_group_msg(self.id, message, auto_escape)
 
     def send_forward_msg(self, messages: str):
         """
-        发送私聊合并转发
+        发送群聊合并转发
         """
-
-        self._cqapi.send_private_forward_msg(self.id, messages)
+        self._cqapi.send_group_forward_msg(self.id, messages)
 
     def poke(self):
         """

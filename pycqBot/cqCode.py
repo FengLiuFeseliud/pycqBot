@@ -63,7 +63,7 @@ def set_cq_code(code: dict[str, Any]) -> str:
     cqCode = "[CQ:%s%s]" % (code["type"], data_str)
     return cqCode
 
-def get_cq_code(code_str: str) -> dict[str, Union[str, dict[str, Any]]]:
+def get_cq_code(code_str: str) -> dict:
     """
     转换 cqCode 字符串为字典
     """
