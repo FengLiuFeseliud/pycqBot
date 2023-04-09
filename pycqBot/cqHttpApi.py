@@ -204,7 +204,6 @@ class cqBot(cqEvent.Event):
         self.commandSign: str = "#"
         # 帮助信息模版
         self.help_text_format: str = "本bot帮助信息!\n{help_command_text}\npycqbot {__VERSIONS__}"
-        self.help_command_text: str = ""
         # 长效消息存储
         self.messageSql: bool = False
         # 长效消息存储 数据库目录
@@ -222,6 +221,8 @@ class cqBot(cqEvent.Event):
         self.reconnection_sleep = 10
         self.reconnection = 3
 
+        self._start_in: bool = False
+
         for key in options.keys():
             if type(options[key]) is str:
                 exec("self.%s = '%s'" % (key, options[key]))
@@ -234,7 +235,7 @@ class cqBot(cqEvent.Event):
         """
 
         def print_help(_, message: Message):
-            message.reply(self.help_text)
+            message.reply(self.get_command_help_text())
 
         self.command(print_help, "help", {
             "type": "all",
@@ -313,7 +314,11 @@ class cqBot(cqEvent.Event):
                 file.write(pycqBot.GO_CQHTTP_CONFIG)
 
     def start(self, go_cqhttp_path: str="./", print_error: bool=True, start_go_cqhttp: bool=True)  -> None:
+        """
+        运行 bot
+        """
         print(pycqBot.TIT)
+
         """
         运行 go-cqhttp 并连接 websocket 会话
         """
@@ -325,7 +330,7 @@ class cqBot(cqEvent.Event):
             elif plat == 'linux':
                 subp = subprocess.Popen("cd %s && ./go-cqhttp -faststart" % go_cqhttp_path, shell=True, stdout=subprocess.PIPE)
 
-            while True:
+            while self._start_in:
                 shell_msg = subp.stdout.readline().decode("utf-8").strip()
                 if shell_msg.strip() == "":
                     continue
@@ -338,12 +343,13 @@ class cqBot(cqEvent.Event):
                 elif not print_error:
                     self.cqhttp_log_print(shell_msg)
         
+        self._start_in = True
         try:
             if not start_go_cqhttp:
                 self._websocket_start()
                 return
 
-            thread = Thread(target=cqhttp_start, name="cqhttp_shell")
+            thread = Thread(target=cqhttp_start, name="go-cqhttp")
             thread.setDaemon(True)
             thread.start()
 
@@ -367,7 +373,7 @@ class cqBot(cqEvent.Event):
                     # 只接收 event
                     async with websockets.connect(self.__host) as websocket:
                         self.reconnection = old_reconnection
-                        while 1:
+                        while self._start_in:
                             try:
                                 self._on_message(await websocket.recv())
                             except ConnectionClosedError as crerr:
@@ -380,22 +386,33 @@ class cqBot(cqEvent.Event):
                 except ConnectionRefusedError as crerr:
                     logging.warning(crerr)
 
+                if not self._start_in:
+                    logging.info("关闭 bot")
+                    return
+                
                 self.reconnection -= 1
                 logging.warning(f"{self.reconnection_sleep}秒后 重新连接 websocket 服务 ({old_reconnection - self.reconnection}/{old_reconnection})")
                 time.sleep(self.reconnection_sleep)
             
-            logging.fatal(f"无法连接 websocket 服务 host: {self._host}")
+            logging.fatal(f"无法连接 websocket 服务 host: {self.__host}")
         
         try:
             asyncio.run(main_logic())
         except KeyboardInterrupt:
             print("\n")
 
+    def stop(self) -> None:
+        """
+        关闭 bot
+        """
+        self._start_in = False
+
     @staticmethod
     def _import_plugin_config() -> dict:
         if os.path.isfile("./plugin_config.yml"):
             with open("./plugin_config.yml", "r", encoding="utf8") as file:
-                return yaml.safe_load(file.read())
+                plugin_config = yaml.safe_load(file.read())
+                return {} if plugin_config is None else plugin_config
         else:
             with open("./plugin_config.yml", "w", encoding="utf8") as file:
                 file.write("# 插件配置")
@@ -416,9 +433,10 @@ class cqBot(cqEvent.Event):
                 return
             
             if plugin not in plugin_config:
-                plugin_config[plugin] = {}
+                plugin_obj = eval("plugin_obj.%s(self, self.cqapi, %s)" % (plugin, "{}"))
+            else:
+                plugin_obj = eval("plugin_obj.%s(self, self.cqapi, plugin_config[plugin])" % plugin)
 
-            plugin_obj = eval(f"plugin_obj.{plugin}(self, self.cqapi, plugin_config[plugin])")
             self.__plugin_list.append(plugin_obj)
 
             logging.debug(f"{plugin} 插件加载完成")
@@ -442,11 +460,10 @@ class cqBot(cqEvent.Event):
         if type(plugin) == list:
             for plugin_ in plugin:
                 self._import_plugin(plugin_, plugin_config)
-            
-            logging.info("插件列表加载完成: %s" % plugin)
         
+        logging.info("加载插件: %s" % plugin)
         return self
-    
+
     def pluginNotFoundError(self, plugin: str) -> None:
         """
         插件不存在
@@ -477,13 +494,16 @@ class cqBot(cqEvent.Event):
 
         if event_name in cqEvent.EVENT:
             if type(event) is Message_Event:
-                message = event.get_message(self.cqapi)
+                event = event.get_message(self.cqapi)
 
-                exec("self.%s(message)" % event_name)
-                self._plugin_event_run(event_name, message)
-            else:
+            def bot_event(self, event):
                 exec("self.%s(event)" % event_name)
+
+            def plugin_event(self, event):
                 self._plugin_event_run(event_name, event)
+
+            Thread(target=bot_event, daemon=True, args=(self,event,), name="bot_event").start()
+            Thread(target=plugin_event, daemon=True, args=(self,event,), name="plugin_event").start()
 
             return event_name, event
         else:
@@ -496,6 +516,20 @@ class cqBot(cqEvent.Event):
         websocket 会话错误
         """
         logging.exception(error)
+
+    def get_command_help_text(self) -> str:
+        """
+        获取所有指令帮助文本
+        """
+        help_command_text = ""
+        for name, command in self.__commandList.items():
+            if not command["help"]:
+                logging.warning("指令 %s 未添加帮助文本" % name)
+                continue
+
+            help_command_text += "\n".join(command["help"]) + "\n"
+
+        return "%s\n" % self.help_text_format.format(help_command_text=help_command_text, __VERSIONS__=pycqBot.__VERSIONS__)
         
     def _check_command_options(self, options: dict[str, Any]) -> dict[str, Any]:
         """
@@ -515,11 +549,8 @@ class cqBot(cqEvent.Event):
         if "ban" not in options:
             options["ban"] = []
 
-        if "help" in options:
-            for help_r_text in options["help"]:
-                self.help_command_text = "%s%s\n" % (self.help_command_text, help_r_text)
-            
-            self.help_text = "%s\n" % self.help_text_format.format(help_command_text=self.help_command_text, __VERSIONS__=pycqBot.__VERSIONS__)
+        if "help" not in options:
+            options["help"] = []
         
         return options
     

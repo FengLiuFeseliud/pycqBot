@@ -203,8 +203,18 @@ bot.start()
 
 **`def start(self, go_cqhttp_path: str="./", print_error: bool=True, start_go_cqhttp: bool=True)  -> None:`**
 
+运行 bot
+
 > `go_cqhttp_path` go-cqhttp 所在目录 默认当前目录
 >
 > `print_error` 是否只输出 go-cqhttp 的错误与警告日志 默认 True 输出
 >
 > `start_go_cqhttp` 是否启动 go-cqhttp 默认 True 启动
+
+**`def stop(self) -> None:`**
+
+关闭 bot
+
+**`def get_command_help_text(self) -> str:`**
+
+获取所有指令帮助文本
