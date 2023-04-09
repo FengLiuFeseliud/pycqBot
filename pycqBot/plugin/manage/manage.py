@@ -1,5 +1,5 @@
 import logging
-from pycqBot.cqApi import cqBot, cqHttpApi
+from pycqBot.cqHttpApi import cqBot, cqHttpApi
 from pycqBot.object import Plugin
 from pycqBot.data import *
 

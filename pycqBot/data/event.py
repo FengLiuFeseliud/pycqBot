@@ -7,7 +7,7 @@ import json
 from pycqBot.data.message import Group_Message, Private_Message
 
 if TYPE_CHECKING:
-    from pycqBot.cqApi import cqHttpApi
+    from pycqBot.cqHttpApi import cqHttpApi
 
 
 class Message:

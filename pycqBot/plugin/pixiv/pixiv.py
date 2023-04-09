@@ -1,7 +1,7 @@
 import logging
 import random
 from lxml import etree
-from pycqBot.cqApi import cqBot, cqHttpApi
+from pycqBot.cqHttpApi import cqBot, cqHttpApi
 from pycqBot.cqCode import image, node_list
 from pycqBot.object import Plugin
 from pycqBot.data import *

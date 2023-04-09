@@ -118,7 +118,7 @@ class Group_Message(Message):
         """
 
     def reply(self, message: str, auto_escape: bool = False) -> None:
-        self._cqapi.send_group_msg(self.group_id, "%s%s" % (reply(msg_id=self.id), message), auto_escape)
+        self._cqapi.send_group_msg(self.group_id, "%s%s" % (reply(self.id), message), auto_escape)
 
     def reply_not_code(self, message: str, auto_escape: bool=False) -> None:
         self._cqapi.send_group_msg(self.group_id, message, auto_escape)

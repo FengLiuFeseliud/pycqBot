@@ -1,10 +1,12 @@
-from typing import Coroutine, Optional
+from typing import Any, Coroutine, Optional
 import logging
 from threading import Thread
 import asyncio
 import aiohttp
 import aiofiles
 import os
+
+import requests
 
 class asyncHttp:
 
@@ -81,6 +83,21 @@ class asyncHttp:
             self.apiLinkRunError(err)
 
             return None
+        
+    def _link(self, api: str, data: dict[str, Any]={}) -> Optional[dict[Any, Any]]:
+        try:
+            with requests.post(f"{self.http}{api}", data=data) as req:
+                json =  req.json()
+                logging.debug("cqAPI 响应: %s" % json)
+                if json["retcode"] != 0:
+                    self.apiLinkError(json)
+                    
+                return json
+            
+        except Exception as err:
+            self.apiLinkRunError(err)
+        
+        return None
     
     def add_task(self, coroutine: Coroutine) -> None:
         """向内部事件循环添加任务"""

@@ -3,7 +3,7 @@ import logging
 import requests
 import time
 from lxml import etree
-from pycqBot.cqApi import cqBot, cqHttpApi
+from pycqBot.cqHttpApi import cqBot, cqHttpApi
 from pycqBot.cqCode import image
 from pycqBot.object import Message, Plugin
 

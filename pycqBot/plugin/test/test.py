@@ -1,5 +1,5 @@
 from pyexpat.errors import messages
-from pycqBot.cqApi import cqBot, cqHttpApi
+from pycqBot.cqHttpApi import cqBot, cqHttpApi
 from pycqBot.object import Plugin, Message
 
 

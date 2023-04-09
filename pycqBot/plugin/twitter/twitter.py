@@ -1,7 +1,7 @@
 import logging
 import time
 from pycqBot.object import Plugin
-from pycqBot.cqApi import cqBot, cqHttpApi
+from pycqBot.cqHttpApi import cqBot, cqHttpApi
 
 
 class twitter(Plugin):
