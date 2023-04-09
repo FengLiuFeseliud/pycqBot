@@ -20,30 +20,55 @@ pypy3 -m pip install pycqBot
 pypy3 ./main.py
 ```
 
-## 最新版本实现
+## 演示
 
-支持模块化的编写
+### 创建指令
 
-支持插件化的编写
+```python
+from pycqBot import cqHttpApi, cqBot, cqLog
+from pycqBot.data import *
 
-内部使用异步进行处理，外部直接使用
+cqLog()
 
-自动化的 cqCode 解析，全面的指令权限设置
+def test(command_data, message: Message):
+    message.reply("你好!")
+ 
+bot = cqHttpApi().create_bot()
+# 创建指令 "#test"
+bot.command(test, "test")
 
-有绝大部分的 go-cqhttp API 同名函数，大部分参数一致
+bot.start()
+```
 
-有绝大部分的 go-cqhttp cqCode 同名函数，大部分参数一致
+### cqCode
 
-支持所有 go-cqhttp API Event，同名与 pycqBot 事件函数
+```python
+from pycqBot.cqCode import image, get_cq_code
 
-内置的消息存储数据库，可以将消息存储在之后使用
 
-内置的日志输出
+cq_code = image("https://i.pixiv.cat/img-master/img/2020/03/25/00/00/08/80334602_p0_master1200.jpg")
+# 字典 与 cqCode 互转
+print(cq_code, "\n\n", get_cq_code(cq_code))
+```
 
-内置模块 bilibili 监听动态/直播 消息 自动解析分享信息
+### 事件处理
 
-内置模块 pixiv 搜图/pid/用户
+```python
+from pycqBot import cqHttpApi, cqBot, cqLog
+from pycqBot.data import *
 
-## 我的b站头像：
 
-![logo](https://i1.hdslb.com/bfs/face/3ad60a0f5d22e182d7a2a822710d483bc16153e2.jpg@250w_250h.webp)
+cqLog()
+
+class myCqBot(cqBot):
+    
+    # 防撤回
+    def notice_group_recall(self, event: Notice_Event):
+        message = self.cqapi.get_msg(event.data["message_id"])["data"]
+        self.cqapi.send_group_msg(message["group_id"], "有一条消息无了 群友还没看清楚呢！ %s：%s" % ( 
+            message["sender"]["nickname"],
+            message["message"]
+        ))
+
+bot = myCqBot(cqHttpApi()).start()
+```
