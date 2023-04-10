@@ -1,4 +1,5 @@
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import importlib
 import platform
 import subprocess
@@ -445,9 +446,30 @@ class cqBot(cqEvent.Event):
         except Exception as err:
             self.pluginImportError(plugin, err)
     
-    def _plugin_event_run(self, event_name: str, *args) -> None:
-        for plugin_obj in self.__plugin_list:
+    def _run_event(self, event_name: str, *args) -> None:
+        event = args[0]
+        if type(event) is Message_Event:
+            event = event.get_message(self.cqapi)
+        args = (event, *args[1:])
+
+        def bot_event(self, event_name, *args):
+            exec("self.%s(*args)" % event_name)
+
+        def plugin_event(plugin_obj, event_name, *args):
             exec(f'plugin_obj.{event_name}(*args)')
+
+        with ThreadPoolExecutor(max_workers=len(self.__plugin_list)+1, thread_name_prefix="run_%s" % event_name) as pool:
+            futures = []
+
+            futures.append(pool.submit(bot_event, self, event_name, *args))
+            for plugin_obj in self.__plugin_list:
+                futures.append(pool.submit(plugin_event, plugin_obj, event_name, *args))
+
+            while True:
+                if all(futures):
+                    return
+
+                time.sleep(0.1)
 
     def plugin_load(self, plugin: Union[str, list[str]]) -> "cqBot":
         """
@@ -493,17 +515,10 @@ class cqBot(cqEvent.Event):
         logging.debug("go-cqhttp 上报 %s 事件: %s" % (event_name, event.data))
 
         if event_name in cqEvent.EVENT:
-            if type(event) is Message_Event:
-                event = event.get_message(self.cqapi)
+            def run_event(self, event):
+                self._run_event(event_name, event)
 
-            def bot_event(self, event):
-                exec("self.%s(event)" % event_name)
-
-            def plugin_event(self, event):
-                self._plugin_event_run(event_name, event)
-
-            Thread(target=bot_event, daemon=True, args=(self,event,), name="bot_event").start()
-            Thread(target=plugin_event, daemon=True, args=(self,event,), name="plugin_event").start()
+            Thread(target=run_event, daemon=True, args=(self,event,), name="__pycqBot_run_event").start()
 
             return event_name, event
         else:
@@ -584,8 +599,7 @@ class cqBot(cqEvent.Event):
     def _timing_job(self, job: dict[str, Any]) -> None:
         run_count = 0
         while True:
-            self.timing_jobs_start(job, run_count)
-            self._plugin_event_run("timing_jobs_start", job, run_count)
+            self._run_event("timing_jobs_start", job, run_count)
             for group_id in self.group_id_list:
                 if group_id in job["ban"]:
                     return
@@ -593,15 +607,13 @@ class cqBot(cqEvent.Event):
                 run_count += 1
                 try:
                     job["function"](group_id)
-                    self.timing_job_end(job, run_count, group_id)
-                    self._plugin_event_run("timing_job_end", job, run_count, group_id)
+                    self._run_event("timing_job_end", job, run_count, group_id)
 
                 except Exception as err:
                     self.runTimingError(job, run_count, err, group_id)
-                    self._plugin_event_run("runTimingError", job, run_count, err, group_id)
+                    self._run_event("runTimingError", job, run_count, err, group_id)
 
-            self.timing_jobs_end(job, run_count)
-            self._plugin_event_run("timing_jobs_end", job, run_count)
+            self._run_event("timing_jobs_end", job, run_count)
             time.sleep(job["timeSleep"])
     
     def timing(self, function: Callable[[int], None], timing_name: str, options: Optional[dict[str, Any]] = None) -> "cqBot":
@@ -793,7 +805,7 @@ class cqBot(cqEvent.Event):
     
     def _message_run(self, message: Union[Message, Private_Message, Group_Message]) -> Union[Message, Private_Message, Group_Message]:
         message = self._message(message)
-        self._plugin_event_run(f"on_{message.event.message_type}_msg", message)
+        self._run_event(f"on_{message.event.message_type}_msg", message)
         self._run_command(message)
 
         return message
@@ -805,11 +817,8 @@ class cqBot(cqEvent.Event):
         """
         if (message.sender.id not in self.user_id_list) and self.user_id_list != []:
             return None
-
-        message = self._message_run(message)
-        self.on_private_msg(message)
-
-        return message
+        
+        return self._message_run(message)
     
     def _message_group(self, message: Group_Message) -> Optional[Group_Message]:
         """
@@ -819,19 +828,16 @@ class cqBot(cqEvent.Event):
             return None
 
         message = self._message_run(message)
-        self.on_group_msg(message)
 
         for cqCode in message.code:
             if cqCode["type"] != "at":
                 continue
 
             if cqCode["data"]["qq"] == str(self.__bot_qq):
-                self.at_bot(message, message.code, cqCode)
-                self._plugin_event_run("at_bot", message, message.code, cqCode)
+                self._run_event("at_bot", message, message.code, cqCode)
                 continue
             
-            self.at(message, message.code, cqCode)
-            self._plugin_event_run("at", message, message.code, cqCode)
+            self._run_event("at", message, message.code, cqCode)
 
         return message
     

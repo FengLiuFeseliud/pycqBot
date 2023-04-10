@@ -153,9 +153,9 @@ def node_list(message_list: list[str], name: str, uin: int) -> str:
     """
     node_list_data = []
     for message in message_list:
-        node_list_data.append(node(message, name, uin))
+        node_list_data.append(node(content=message, name=name, uin=uin))
     
-    return json.dumps(node_list_data, separators=(',', ':'))
+    return json_data.dumps(node_list_data, separators=(',', ':'), ensure_ascii=False)
 
 
 def face(
@@ -633,16 +633,29 @@ def node(
     if id is not None and content is not None:
         content = None
 
-    return {
+    code_data = {
         "type":"node",
         "data": {
-            "id": id,
-            "name": name,
-            "uin": uin,
-            "content": content,
-            "seq": seq
+
         }
     }
+
+    if id is not None:
+        code_data["data"]["id"] = id
+
+    if name is not None:
+        code_data["data"]["name"] = name
+
+    if uin is not None:
+        code_data["data"]["uin"] = uin
+
+    if content is not None:
+        code_data["data"]["content"] = content
+
+    if content is not None:
+        code_data["data"]["seq"] = seq
+
+    return code_data
 
 
 def xml(
