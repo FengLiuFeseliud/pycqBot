@@ -38,7 +38,7 @@ pypy3 ./main.py
 **注意启动前请[下载 go-cqhttp 最新版本](https://github.com/Mrs4s/go-cqhttp/releases) 并放在当前目录**
 
 ```python
-from pycqBot.cqApi import cqHttpApi, cqLog
+from pycqBot import cqHttpApi, cqLog
 
 # 启用日志 默认日志等级 DEBUG
 cqLog()
