@@ -15,7 +15,7 @@
 
 ```python
 # main.py
-from pycqBot.cqApi import cqHttpApi, cqLog
+from pycqBot import cqHttpApi, cqLog
 
 cqLog()
 
@@ -111,7 +111,7 @@ class myPlugin(Plugin):
 
 ```python
 # plugin/myPlugin/myPlugin.py
-from pycqBot.cqApi import cqBot, cqHttpApi
+from pycqBot import cqBot, cqHttpApi
 from pycqBot.object import Plugin
 from pycqBot.data import *
 
@@ -148,7 +148,7 @@ class myPlugin(Plugin):
 
 ```python
 # plugin/myPlugin/myPlugin.py
-from pycqBot.cqApi import cqBot, cqHttpApi
+from pycqBot import cqBot, cqHttpApi
 from pycqBot.object import Plugin
 from pycqBot.data import *
 
@@ -187,7 +187,7 @@ class myPlugin(Plugin):
 
 ```python
 # plugin/myPlugin/myPlugin.py
-from pycqBot.cqApi import cqBot, cqHttpApi
+from pycqBot import cqBot, cqHttpApi
 from pycqBot.object import Plugin
 from pycqBot.data import *
 
@@ -237,7 +237,7 @@ myPlugin:
 
 ```python
 # plugin/myPlugin/myPlugin.py
-from pycqBot.cqApi import cqBot, cqHttpApi
+from pycqBot import cqBot, cqHttpApi
 from pycqBot.object import Plugin
 from pycqBot.data import *
 
@@ -272,7 +272,7 @@ myPlugin:
 
 ```python
 # plugin/myPlugin/myPlugin.py
-from pycqBot.cqApi import cqBot, cqHttpApi
+from pycqBot import cqBot, cqHttpApi
 from pycqBot.object import Plugin
 from pycqBot.data import *
 
