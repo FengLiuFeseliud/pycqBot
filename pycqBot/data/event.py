@@ -112,10 +112,12 @@ class Request_Event(Event):
 
     def __init__(self, event_data: dict[str, Any]) -> None:
         super().__init__(event_data)
-
+        # 必要的flag，用于同意或拒绝请求
+        self.flag = event_data["flag"]
         self.request_type: str = event_data["request_type"] if "request_type" in event_data else None
         """请求类型"""
-
+    def get_flag(self)->str:
+        return self.flag
     def get_event_sub_type(self) -> str:
         return self.request_type
     
