@@ -718,7 +718,7 @@ class cqBot(cqEvent.Event):
         指令解析
         """
 
-        if self.commandSign != "":
+        if self.commandSign != "" and list(message):
             commandSign = list(message)[0]
         else:
             commandSign = ""
