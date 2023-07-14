@@ -319,7 +319,6 @@ class cqBot(cqEvent.Event):
         运行 bot
         """
         print(pycqBot.TIT)
-
         """
         运行 go-cqhttp 并连接 websocket 会话
         """

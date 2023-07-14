@@ -104,7 +104,10 @@ class Group_User(User):
     
     def __init__(self, cqapi: cqHttpApi, group_id: int, user_data: dict[str, Any]) -> None:
         super().__init__(cqapi, user_data)
-
+        
+        self.user_id = self.id
+        """发送者QQ 号"""
+        
         self.group_id: int = group_id
         """来源群"""
 
