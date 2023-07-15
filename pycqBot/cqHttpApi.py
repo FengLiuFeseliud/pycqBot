@@ -332,7 +332,7 @@ class cqBot(cqEvent.Event):
                 subp = subprocess.Popen("cd %s && ./go-cqhttp -faststart" % go_cqhttp_path, shell=True, stdout=subprocess.PIPE)
             elif plat == 'darwin':
                 subp = subprocess.Popen("cd %s && ./go-cqhttp -faststart" % go_cqhttp_path, shell=True, stdout=subprocess.PIPE)
-            else 
+            else:
                 print("unsupported system: ", plat)
                 sys.exit(1)
             while self._start_in:
