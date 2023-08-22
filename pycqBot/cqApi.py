@@ -1,6 +1,6 @@
-from typing import Optional, Union
+from typing import Any, Optional
 from pycqBot.asyncHttp import asyncHttp
-from pycqBot.data.message import *
+from pycqBot.data.message import Message, Group_Message, Private_Message
 
 
 class Api(asyncHttp):
@@ -391,7 +391,7 @@ class Api(asyncHttp):
 
     def send_reply(
         self,
-        from_message: Union[Private_Message, Group_Message, Message],
+        from_message: Message,
         message: str,
         auto_escape: bool = False
     ) -> None:
@@ -411,7 +411,7 @@ class Api(asyncHttp):
 
     def send_forward_msg(
         self,
-        from_message: Union[Private_Message, Group_Message],
+        from_message: Message,
         message: str
     ) -> None:
         """
@@ -975,11 +975,11 @@ class Api(asyncHttp):
         })
 
     def set_group_anonymous_ban(self,
-        group_id: int,
-        duration: int = 1800,
-        anonymous: Optional[object] = None,
-        anonymous_flag: Optional[str] = None,
-    ) -> None:
+                                group_id: int,
+                                duration: int = 1800,
+                                anonymous: Optional[object] = None,
+                                anonymous_flag: Optional[str] = None,
+                                ) -> None:
         """
         群匿名用户禁言
 
@@ -1276,7 +1276,7 @@ class Api(asyncHttp):
         return self._link("/get_group_file_system_info", {
             "group_id": group_id
         })
-    
+
     def get_group_root_files(
         self,
         group_id: int
@@ -1290,7 +1290,7 @@ class Api(asyncHttp):
         Returns:
             `files`: 文件列表
             `folders`: 文件夹列表
-        
+
         go-cqhttp 文档:
         https://docs.go-cqhttp.org/api/#%E8%8E%B7%E5%8F%96%E7%BE%A4%E6%A0%B9%E7%9B%AE%E5%BD%95%E6%96%87%E4%BB%B6%E5%88%97%E8%A1%A8
         """
@@ -1313,7 +1313,7 @@ class Api(asyncHttp):
         Returns:
             `files`: 文件列表
             `folders`: 文件夹列表
-        
+
         go-cqhttp 文档:
         https://docs.go-cqhttp.org/api/#%E8%8E%B7%E5%8F%96%E7%BE%A4%E5%AD%90%E7%9B%AE%E5%BD%95%E6%96%87%E4%BB%B6%E5%88%97%E8%A1%A8
         """
@@ -1321,7 +1321,7 @@ class Api(asyncHttp):
             "group_id": group_id,
             "folder_id": folder_id
         })
-    
+
     def get_group_file_url(
         self,
         group_id: int,
@@ -1338,7 +1338,7 @@ class Api(asyncHttp):
 
         Returns:
             `url`: str 文件下载链接
-        
+
         go-cqhttp 文档:
         https://docs.go-cqhttp.org/api/#%E8%8E%B7%E5%8F%96%E7%BE%A4%E6%96%87%E4%BB%B6%E8%B5%84%E6%BA%90%E9%93%BE%E6%8E%A5
         """
@@ -1347,7 +1347,7 @@ class Api(asyncHttp):
             "file_id": file_id,
             "busid": busid
         })
-    
+
     def upload_private_file(
         self,
         user_id: int,

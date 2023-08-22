@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, TYPE_CHECKING, Optional
+from typing import Any, TYPE_CHECKING, Optional, Literal
 
 from pycqBot.cqCode import poke
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 class User(metaclass=ABCMeta):
 
-    def __init__(self, cqapi: cqHttpApi, user_data:  dict[str, Any]) -> None:
+    def __init__(self, cqapi: 'cqHttpApi', user_data:  dict[str, Any]) -> None:
         self._cqapi = cqapi
 
         self.id: int = user_data["user_id"]
@@ -21,11 +21,11 @@ class User(metaclass=ABCMeta):
         self.nickname: str = user_data["nickname"]
         """昵称"""
 
-        self.sex: str = user_data["sex"]
-        """
-        性别\n
-
-            male 男性, female 女性 或 unknown 未知
+        self.sex: Literal['male', 'female', 'unknown'] = user_data["sex"]
+        """性别
+        - male 男性
+        - female 女性
+        - unknown 未知
         """
 
         self.age: int = user_data["age"]
@@ -70,15 +70,14 @@ class User(metaclass=ABCMeta):
 
 class Private_User(User):
     """私聊用户"""
-    
-    def __init__(self, cqapi: cqHttpApi, user_data: dict[str, Any]) -> None:
+
+    def __init__(self, cqapi: 'cqHttpApi', user_data: dict[str, Any]) -> None:
         super().__init__(cqapi, user_data)
 
-        self.group_id: Optional[int] = user_data["group_id"] if "group_id" in user_data else None
+        self.group_id: Optional[int] = user_data.get('group_id')
         """
-        临时群消息来源群号\n
-
-            当私聊类型为群临时会话时的额外字段
+        临时群消息来源群号
+        - ( 当私聊类型为群临时会话时的额外字段 )
         """
 
     def send_message(self, message: str, auto_escape: bool = False):
@@ -89,7 +88,7 @@ class Private_User(User):
         if self.group_id is None:
             self._cqapi.send_private_msg(self.id, message, auto_escape)
             return
-         
+
         self._cqapi.send_private_msg(self.id, message, self.group_id, auto_escape)
 
     def send_forward_msg(self, messages: str):
@@ -99,10 +98,11 @@ class Private_User(User):
 
         self._cqapi.send_private_forward_msg(self.id, messages)
 
+
 class Group_User(User):
     """群聊用户"""
-    
-    def __init__(self, cqapi: cqHttpApi, group_id: int, user_data: dict[str, Any]) -> None:
+
+    def __init__(self, cqapi: 'cqHttpApi', group_id: int, user_data: dict[str, Any]) -> None:
         super().__init__(cqapi, user_data)
 
         self.group_id: int = group_id
@@ -117,11 +117,11 @@ class Group_User(User):
         self.level: str = user_data["level"]
         """成员等级"""
 
-        self.role: str = user_data["role"]
-        """
-        角色\n
-
-            owner 群主, admin 管理员, member 群友
+        self.role: Literal['owner', 'admin', 'member'] = user_data["role"]
+        """角色
+        - owner 群主
+        - admin 管理员
+        - member 群成员
         """
 
         self.title: str = user_data["title"]

@@ -18,3 +18,5 @@
 /device.json
 /session.token
 /go-cqhttp
+
+/.vscode

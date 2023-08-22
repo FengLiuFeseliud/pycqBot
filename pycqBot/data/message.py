@@ -1,19 +1,17 @@
-from __future__ import annotations
-
 from abc import ABCMeta, abstractmethod
-from typing import Any, Union, TYPE_CHECKING, Optional
+from typing import Any, TYPE_CHECKING, Optional
 from pycqBot.cqCode import reply, strToCqCode, get_cq_code
 from pycqBot.data.user import Private_User, Group_User, User
 
 
 if TYPE_CHECKING:
-    from pycqBot import cqBot, cqHttpApi
+    from pycqBot import cqHttpApi
     from pycqBot.data.event import Message_Event
 
 
 class Message(metaclass=ABCMeta):
 
-    def __init__(self, cqapi: cqHttpApi, event: Message_Event, message_data: dict[str, Any]) -> None:
+    def __init__(self, cqapi: 'cqHttpApi', event: 'Message_Event', message_data: dict[str, Any]) -> None:
         self._cqapi = cqapi
         self._message_data: dict[str, Any] = message_data
 
@@ -40,7 +38,7 @@ class Message(metaclass=ABCMeta):
         self.font: int = message_data["font"]
         """字体"""
 
-        self.sender: Optional[Union[Private_User, Group_User]] = None
+        self.sender: Optional[User] = None
         """发送人"""
 
         self.message: str = message_data["message"]
@@ -49,17 +47,18 @@ class Message(metaclass=ABCMeta):
         self.code_str: list[str] = strToCqCode(self.message)
         """消息 cqCode 字符串"""
 
-        self.code: list[dict[str, Any]] = [get_cq_code(code_str) for code_str in self.code_str]
+        self.code: list[dict[str, Any]] = [
+            get_cq_code(code_str) for code_str in self.code_str]
         """消息 cqCode 字典"""
 
     @abstractmethod
-    def reply(self, message: str, auto_escape: bool=False) -> None:
+    def reply(self, message: str, auto_escape: bool = False) -> None:
         """
         回复该消息
         """
 
     @abstractmethod
-    def reply_not_code(self, message: str, auto_escape: bool=False) -> None:
+    def reply_not_code(self, message: str, auto_escape: bool = False) -> None:
         """
         回复该消息 不带 cqcode
         """
@@ -69,7 +68,7 @@ class Message(metaclass=ABCMeta):
         撤回消息
         """
         self._cqapi.delete_msg(self.id)
-    
+
     def record(self, time_end: int) -> None:
         """
         存储该消息
@@ -80,10 +79,11 @@ class Message(metaclass=ABCMeta):
 class Private_Message(Message):
     """私聊消息"""
 
-    def __init__(self, cqapi: cqHttpApi, event: Message_Event, message_data: dict[str, Any]) -> None:
+    def __init__(self, cqapi: 'cqHttpApi', event: 'Message_Event', message_data: dict[str, Any]) -> None:
         super().__init__(cqapi, event, message_data)
 
-        self.sender: Private_User = Private_User(self._cqapi, message_data["sender"])
+        self.sender: Private_User = Private_User(
+            self._cqapi, message_data["sender"])
         """发送人"""
 
         self.target_id: int = message_data["target_id"]
@@ -93,21 +93,24 @@ class Private_Message(Message):
         """临时会话来源"""
 
     def reply(self, message: str, auto_escape: bool = False) -> None:
-        self._cqapi.send_private_msg(self.sender.id, "%s%s" % (reply(msg_id=self.id), message), self.temp_source, auto_escape)
+        self._cqapi.send_private_msg(self.sender.id, "%s%s" % (
+            reply(msg_id=self.id), message), self.temp_source, auto_escape)
 
-    def reply_not_code(self, message: str, auto_escape: bool=False) -> None:
-        self._cqapi.send_private_msg(self.sender.id, message, self.temp_source, auto_escape)
+    def reply_not_code(self, message: str, auto_escape: bool = False) -> None:
+        self._cqapi.send_private_msg(
+            self.sender.id, message, self.temp_source, auto_escape)
+
 
 class Group_Message(Message):
     """群消息"""
 
-    def __init__(self, cqapi: cqHttpApi, event: Message_Event, message_data: dict[str, Any]) -> None:
+    def __init__(self, cqapi: 'cqHttpApi', event: 'Message_Event', message_data: dict[str, Any]) -> None:
         super().__init__(cqapi, event, message_data)
 
         self.group_id: int = message_data["group_id"]
         """群号"""
 
-        self.sender: Group_User = Group_User(self._cqapi, self.group_id, message_data["sender"])
+        self.sender = Group_User(self._cqapi, self.group_id, message_data["sender"])
         """发送人"""
 
         self.anonymous: dict[str, Any] = message_data["anonymous"]
@@ -118,9 +121,10 @@ class Group_Message(Message):
         """
 
     def reply(self, message: str, auto_escape: bool = False) -> None:
-        self._cqapi.send_group_msg(self.group_id, "%s%s" % (reply(self.id), message), auto_escape)
+        self._cqapi.send_group_msg(self.group_id, "%s%s" % (
+            reply(self.id), message), auto_escape)
 
-    def reply_not_code(self, message: str, auto_escape: bool=False) -> None:
+    def reply_not_code(self, message: str, auto_escape: bool = False) -> None:
         self._cqapi.send_group_msg(self.group_id, message, auto_escape)
 
     def set_essence(self):

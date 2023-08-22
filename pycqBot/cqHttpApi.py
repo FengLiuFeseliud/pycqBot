@@ -3,7 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 import importlib
 import platform
 import subprocess
-from typing import Union, Optional, Any, Callable
+import sys
+from typing import Optional, Any, Callable
 import os
 from logging import handlers
 import logging
@@ -185,7 +186,13 @@ class cqBot(cqEvent.Event):
     """
     cqBot 机器人
     """
-    def __init__(self, cqapi: cqHttpApi, host: str="ws://127.0.0.1:8080", group_id_list: list[int]=[], user_id_list: list[int]=[], options: dict[str, Union[list, str, int]]={}):
+    def __init__(self, 
+        cqapi: cqHttpApi,
+        host: str="ws://127.0.0.1:8080",
+        group_id_list: list[int]=[],
+        user_id_list: list[int]=[],
+        options: dict[str, list | str | int]={}
+    ):
 
         self.cqapi = cqapi
         self.__plugin_list: list[object] = []
@@ -332,7 +339,7 @@ class cqBot(cqEvent.Event):
                 subp = subprocess.Popen("cd %s && ./go-cqhttp -faststart" % go_cqhttp_path, shell=True, stdout=subprocess.PIPE)
             elif plat == 'darwin':
                 subp = subprocess.Popen("cd %s && ./go-cqhttp -faststart" % go_cqhttp_path, shell=True, stdout=subprocess.PIPE)
-            else 
+            else:
                 print("unsupported system: ", plat)
                 sys.exit(1)
             while self._start_in:
@@ -475,7 +482,7 @@ class cqBot(cqEvent.Event):
 
                 time.sleep(0.1)
 
-    def plugin_load(self, plugin: Union[str, list[str]]) -> "cqBot":
+    def plugin_load(self, plugin: str | list[str]) -> "cqBot":
         """
         加载插件
         """
@@ -585,7 +592,11 @@ class cqBot(cqEvent.Event):
 
         return options
         
-    def command(self, function: Callable[[list[str], Message], None], command_name: Union[str, list[str]], options: Optional[dict[str, Any]] = None) -> "cqBot":
+    def command(self, 
+        function: Callable[[list[str], Message], Any],
+        command_name: str | list[str], 
+        options: Optional[dict[str, Any]] = None
+    ) -> "cqBot":
         if options is None:
             options = {}
             
@@ -729,7 +740,7 @@ class cqBot(cqEvent.Event):
 
         return commandSign, command, commandData
     
-    def _check_command(self, message: Union[Private_Message, Group_Message]):
+    def _check_command(self, message: Message):
         """
         指令检查
         """
@@ -807,7 +818,7 @@ class cqBot(cqEvent.Event):
         
         return message
     
-    def _message_run(self, message: Union[Message, Private_Message, Group_Message]) -> Union[Message, Private_Message, Group_Message]:
+    def _message_run(self, message: Message) -> Message:
         message = self._message(message)
         self._run_event(f"on_{message.event.message_type}_msg", message)
         self._run_command(message)

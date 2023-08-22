@@ -1,5 +1,4 @@
-from typing import Any, Union, Optional
-from time import time
+from typing import Any, Optional
 import json as json_data
 
 
@@ -43,7 +42,7 @@ def strToCqCode(message: str) -> list[str]:
     return cq_code_list
 
 
-def strToCqCodeToDict(message: str) -> list[dict[str, Union[str, dict[str, Any]]]]:
+def strToCqCodeToDict(message: str) -> list[dict[str, str | dict[str, Any]]]:
     """
     提取字符串中的 cqCode 字符串转换为字典
     """
@@ -240,7 +239,7 @@ def video(
 
 
 def at(
-    qq: Union[int, str], 
+    qq: int | str, 
     name: Optional[str] = None
 ) -> str:
     """
@@ -519,7 +518,7 @@ def image(
 def reply(
     id: int, 
     text: Optional[str] = None, 
-    qq: Optional[Union[int, str]] = None,
+    qq: Optional[int | str] = None,
     time: Optional[int] = None,
     seq: Optional[str] = None, 
 ) -> str:
@@ -614,7 +613,7 @@ def node(
     uin: Optional[int] = None,
     content: Optional[str] = None, 
     seq: Optional[str] = None
-) -> dict[str, Union[str, dict[str, Any]]]:
+) -> dict[str, str | dict[str, Any]]:
     """
     合并转发消息节点
 
