@@ -22,18 +22,15 @@ setup(
     url="https://github.com/FengLiuFeseliud/pycqBot",
     author="FengLiuFeseliud",
     author_email="17351198406@qq.com",
-    
     packages=find_packages(),
-    package_data = {
+    package_data={
         '': ['*.py'],
     },
-    
-
     include_package_data=True,
     platforms="any",
-    install_requires=["requests", 
-        "websockets", 
-        "asyncio", 
+    install_requires=[
+        "requests",
+        "websockets",
         "aiohttp",
         "aiofiles",
         "lxml",
