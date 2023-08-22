@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "pycqbot"
+version = "0.5.1"
+description = "go-cqhttp python 框架，可以用于快速塔建 bot"
+authors = ["FengLiuFeseliud <17351198406@qq.com>"]
+license = "AGPL-3.0 License"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.31.0"
+websockets = "^11.0.3"
+aiohttp = "^3.8.5"
+aiofiles = "^23.2.1"
+lxml = "4.9.3"
+PyYAML = "^6.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+priority = "default"
