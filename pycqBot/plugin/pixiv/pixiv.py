@@ -1,6 +1,6 @@
-import logging
 import random
 from lxml import etree
+from pycqBot.cqLogger import cqlogger
 from pycqBot.cqHttpApi import cqBot, cqHttpApi
 from pycqBot.cqCode import image, node_list
 from pycqBot.object import Plugin
@@ -391,52 +391,52 @@ class pixiv(Plugin):
         """
         搜索随机图片时错误
         """
-        logging.error("搜索 %s 随机图片时发生错误! Error: %s " % (search_data, err))
-        logging.exception(err)
+        cqlogger.error("搜索 %s 随机图片时发生错误! Error: %s " % (search_data, err))
+        cqlogger.exception(err)
     
     def randomSearchUserImageError(self, user_name, rlen, nick, err):
         """
         随机用户作品时错误
         """
-        logging.error("随机 %s 作品时发生错误! Error: %s " % (user_name, err))
-        logging.exception(err)
+        cqlogger.error("随机 %s 作品时发生错误! Error: %s " % (user_name, err))
+        cqlogger.exception(err)
     
     def randomSearchFollowingImageError(self, err):
         """
         随机关注用户作品时发生错误
         """
-        logging.error("随机关注用户作品时发生错误! Error: %s " % err)
-        logging.exception(err)
+        cqlogger.error("随机关注用户作品时发生错误! Error: %s " % err)
+        cqlogger.exception(err)
     
     def searchPidError(self, pid_list, err):
         """
         搜索PID时发生错误
         """
-        logging.error("搜索 PID %s 时发生错误! Error: %s " % (pid_list, err))
-        logging.exception(err)
+        cqlogger.error("搜索 PID %s 时发生错误! Error: %s " % (pid_list, err))
+        cqlogger.exception(err)
     
     def getImageError(self, img_id, err):
         """
         搜索图片时发生错误
         """
-        logging.error("搜索图片 %s 时发生错误! Error: %s " % (img_id, err))
-        logging.exception(err)
+        cqlogger.error("搜索图片 %s 时发生错误! Error: %s " % (img_id, err))
+        cqlogger.exception(err)
     
     def getUserError(self, user_name, nick, err):
         """
         搜索用户时发生错误
         """
-        logging.error("搜索用户 %s 时发生错误! Error: %s " % (user_name, err))
-        logging.exception(err)
+        cqlogger.error("搜索用户 %s 时发生错误! Error: %s " % (user_name, err))
+        cqlogger.exception(err)
     
     def getFollowingError(self, following_data):
         """
         获取关注用户时发生错误
         """
-        logging.error("获取关注用户时发生错误! Error: %s " % following_data)
+        cqlogger.error("获取关注用户时发生错误! Error: %s " % following_data)
 
     def pixivApiError(self, err_msg):
         """
         请求 pixiv api 时错误
         """
-        logging.error("请求 pixiv api发生错误! Error: %s " % err_msg)
+        cqlogger.error("请求 pixiv api发生错误! Error: %s " % err_msg)
