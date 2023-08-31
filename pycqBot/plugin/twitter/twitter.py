@@ -1,8 +1,7 @@
-import logging
 import time
 from pycqBot.object import Plugin
 from pycqBot.cqHttpApi import cqBot, cqHttpApi
-
+from pycqBot.cqLogger import cqlogger
 
 class twitter(Plugin):
     """
@@ -27,7 +26,7 @@ class twitter(Plugin):
         }
         self._user_list = plugin_config["monitor"]
         if self._user_list is None:
-            logging.warning("twitter 插件未配置 monitor 中止加载")
+            cqlogger.warning("twitter 插件未配置 monitor 中止加载")
             return
 
         self._user_id_list = []
@@ -131,11 +130,11 @@ class twitter(Plugin):
         """
         推特 api 错误
         """
-        logging.error("推特 api 错误 code: %s error: %s" % (code, error))
+        cqlogger.error("推特 api 错误 code: %s error: %s" % (code, error))
     
     def monitorTweetsError(self, err):
         """
         推文更新错误
         """
-        logging.error("监听推文更新错误 error: %s" % err)
-        logging.exception(err)
+        cqlogger.error("监听推文更新错误 error: %s" % err)
+        cqlogger.exception(err)

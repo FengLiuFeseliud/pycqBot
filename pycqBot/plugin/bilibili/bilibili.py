@@ -1,11 +1,11 @@
 import json
-import logging
 import requests
 import time
 from lxml import etree
 from pycqBot.cqHttpApi import cqBot, cqHttpApi
 from pycqBot.cqCode import image
 from pycqBot.object import Message, Plugin
+from pycqBot.cqLogger import cqlogger
 
 
 class bilibili(Plugin):
@@ -219,7 +219,7 @@ class bilibili(Plugin):
                 return
 
             message.reply_not_code(link_message)
-            logging.debug("解析到了分享信息 %s" % link_message)
+            cqlogger.debug("解析到了分享信息 %s" % link_message)
         except Exception as err:
             self.getShareVideoError(err)
     
@@ -506,7 +506,7 @@ class bilibili(Plugin):
                     self._lives_old.remove(live_id)
                     live_end_message = self.set_live_end_message(live_list["data"][live_id])
                     self._send_msg_list.append(live_end_message)
-                    logging.debug("监听到了下播 %s" % live_end_message)
+                    cqlogger.debug("监听到了下播 %s" % live_end_message)
 
                 continue
 
@@ -516,7 +516,7 @@ class bilibili(Plugin):
             live_message = self.set_live_message(live_list["data"][live_id])
             self._send_msg_list.append(live_message)
             self._lives_old.append(live_id)
-            logging.debug("监听到了开播 %s" % live_message)
+            cqlogger.debug("监听到了开播 %s" % live_message)
     
     async def _dynamic_check(self, dynamic):
         dynamic = self._dynamic_type_check(
@@ -559,14 +559,14 @@ class bilibili(Plugin):
                     self._dynamic_list_old[uid]["data"])
                 )
                 self._send_msg_list.append(dynamic)
-                logging.debug("监听到了动态删除 %s" % dynamic)
+                cqlogger.debug("监听到了动态删除 %s" % dynamic)
                 continue
             
             dynamic = await self._dynamic_check(
                     dynamic_list[uid]["data"]
                 )
             self._send_msg_list.append(dynamic)
-            logging.debug("监听到了新的动态 %s" % dynamic)
+            cqlogger.debug("监听到了新的动态 %s" % dynamic)
 
         self._dynamic_list_old = dynamic_list
     
@@ -620,25 +620,25 @@ class bilibili(Plugin):
         """
         监听直播信息时错误
         """
-        logging.error("监听直播信息发生错误! Error: %s" % err)
-        logging.exception(err)
+        cqlogger.error("监听直播信息发生错误! Error: %s" % err)
+        cqlogger.exception(err)
 
     def monitorDynamicError(self, err):
         """
         监听动态信息时错误
         """
-        logging.error("监听动态信息发生错误! Error: %s" % err)
-        logging.exception(err)
+        cqlogger.error("监听动态信息发生错误! Error: %s" % err)
+        cqlogger.exception(err)
     
     def getShareVideoError(self, err):
         """
         解析分享信息时错误
         """
-        logging.error("解析分享信息发生错误! Error: %s" % err)
-        logging.exception(err)
+        cqlogger.error("解析分享信息发生错误! Error: %s" % err)
+        cqlogger.exception(err)
     
     def biliApiError(self, code, err_msg):
         """
         请求 bilibili api 时错误
         """
-        logging.error("请求 bilibili api发生错误! Error: %s code:%s" % (err_msg, code))
+        cqlogger.error("请求 bilibili api发生错误! Error: %s code:%s" % (err_msg, code))

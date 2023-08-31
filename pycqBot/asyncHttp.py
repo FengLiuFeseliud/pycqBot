@@ -1,5 +1,5 @@
 from typing import Any, Coroutine, Optional
-import logging
+from pycqBot.cqLogger import cqlogger
 from threading import Thread
 import asyncio
 import aiohttp
@@ -43,10 +43,10 @@ class asyncHttp:
 
         json = await self.link("%s%s" % (self.http, api), mod="post", data=data)
         if json == {} or json is None:
-            logging.warning("cqAPI 响应: None / {}")
+            cqlogger.warning("cqAPI 响应: None / {}")
             return None
 
-        logging.debug("cqAPI 响应: %s" % json)
+        cqlogger.debug("cqAPI 响应: %s" % json)
             
         if json["retcode"] != 0:
             self.apiLinkError(json)
@@ -88,7 +88,7 @@ class asyncHttp:
         try:
             with requests.post(f"{self.http}{api}", data=data) as req:
                 json =  req.json()
-                logging.debug("cqAPI 响应: %s" % json)
+                cqlogger.debug("cqAPI 响应: %s" % json)
                 if json["retcode"] != 0:
                     self.apiLinkError(json)
                     
@@ -147,30 +147,30 @@ class asyncHttp:
         """
         下载完成
         """
-        logging.info("%s 下载完成! code: %s" % (file_name, code))
+        cqlogger.info("%s 下载完成! code: %s" % (file_name, code))
 
     def downloadFileError(self, file_name: str, file_url: str, code: int) -> None:
         """
         下载失败
         """
-        logging.error("%s 下载失败... code: %s" % (file_name, code))
+        cqlogger.error("%s 下载失败... code: %s" % (file_name, code))
     
     def downloadFileRunError(self, err: Exception) -> None:
         """
         下载时发生错误
         """
-        logging.error("下载文件时发生错误 Error: %s" % err)
-        logging.exception(err)
+        cqlogger.error("下载文件时发生错误 Error: %s" % err)
+        cqlogger.exception(err)
     
     def apiLinkError(self, err_json: dict) -> None:
         """
         cqapi发生错误
         """
-        logging.error("api 发生错误 %s: %s code: %s" % (err_json["msg"], err_json["wording"], err_json["retcode"]))
+        cqlogger.error("api 发生错误 %s: %s code: %s" % (err_json["msg"], err_json["wording"], err_json["retcode"]))
     
     def apiLinkRunError(self, err: Exception) -> None:
         """
         cqapi请求时发生错误
         """
-        logging.error("api 请求发生错误 Error: %s" % err)
-        logging.exception(err)
+        cqlogger.error("api 请求发生错误 Error: %s" % err)
+        cqlogger.exception(err)

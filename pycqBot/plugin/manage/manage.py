@@ -1,4 +1,4 @@
-import logging
+from pycqBot.cqLogger import cqlogger
 from pycqBot.cqHttpApi import cqBot, cqHttpApi
 from pycqBot.object import Plugin
 from pycqBot.data import *
@@ -84,10 +84,10 @@ class manage(Plugin):
     def request_group_invite(self, event: Request_Event):
         if self._group_request_all:
             self.cqapi.set_group_add_request(event.data["flag"], event.data["sub_type"], True)
-            logging.info("接受来自 qq=%s 的 group_id=%s 群邀请" % (event.data["user_id"],event.data["group_id"] ))
+            cqlogger.info("接受来自 qq=%s 的 group_id=%s 群邀请" % (event.data["user_id"],event.data["group_id"] ))
             return
         
-        logging.info("保存来自 qq=%s 的 group_id=%s 群邀请" % (event.data["user_id"],event.data["group_id"] ))
+        cqlogger.info("保存来自 qq=%s 的 group_id=%s 群邀请" % (event.data["user_id"],event.data["group_id"] ))
         self._request_group_message_list.append(event.data)
 
     def notice_group_recall(self, event: Notice_Event):
