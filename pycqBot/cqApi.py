@@ -1,3 +1,4 @@
+from array import array
 from typing import Optional, Union
 from pycqBot.asyncHttp import asyncHttp
 from pycqBot.data.message import *
@@ -23,7 +24,7 @@ class Api(asyncHttp):
         go-cqhttp 文档:
         https://docs.go-cqhttp.org/api/#%E8%8E%B7%E5%8F%96%E7%99%BB%E5%BD%95%E5%8F%B7%E4%BF%A1%E6%81%AF
         """
-        return self._link("/set_friend_add_request")
+        return self._link("/get_login_info")
 
     def set_qq_profile(
         self,
@@ -332,7 +333,7 @@ class Api(asyncHttp):
     def send_group_forward_msg(
         self,
         group_id: int,
-        message: str
+        message: list[str]
     ) -> None:
         """
         发送合并转发 ( 群 )
@@ -352,7 +353,7 @@ class Api(asyncHttp):
     def send_private_forward_msg(
         self,
         user_id: int,
-        message: str
+        message: list[str]
     ) -> None:
         """
         发送合并转发 ( 私聊 )
