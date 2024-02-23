@@ -18,3 +18,6 @@
 /device.json
 /session.token
 /go-cqhttp
+venv
+pycqBot.egg-info
+.vscode
