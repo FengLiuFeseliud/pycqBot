@@ -2,7 +2,7 @@
 
 ## 什么是 pycqBot？
 
-pycqBot 是一个基于 go-cqhttp 的 Ptyhon QQ bot 框架
+pycqBot 是一个基于 go-cqhttp 的 Python QQ bot 框架
 
 内部使用异步进行处理，外部直接使用
 
